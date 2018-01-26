@@ -1,7 +1,7 @@
 .PHONY: clean
 
-ROOTLIBS = $(shell root-config --glibs)
-ROOTCXXF = $(shell root-config --cflags)
+#ROOTLIBS = $(shell root-config --glibs)
+#ROOTCXXF = $(shell root-config --cflags)
 LDFLAGS  := $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 $(ROOTCXXF) -Iinclude/
 
