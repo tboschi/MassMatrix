@@ -6,6 +6,7 @@ LDFLAGS  := $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 $(ROOTCXXF) -Iinclude/
 
 TGT =	RandomScan
+#TGT =	OneGeneration
 
 all: $(TGT)
 
