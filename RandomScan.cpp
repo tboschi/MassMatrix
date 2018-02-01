@@ -103,9 +103,10 @@ int main(int argc, char** argv)
 	std::ofstream OutFile;
 	int dd = 9, nn = 12, mm = 0, uu = 6;
 	unsigned int nMAX = 10000;
+	unsigned long Seed = std::chrono::system_clock::now().time_since_epoch()/std::chrono::milliseconds(1);
 	double CL = 0.90;	//90% C.L.
 
-	while((iarg = getopt_long(argc,argv, "I:d:n:m:u:o:h", longopts, &index)) != -1)
+	while((iarg = getopt_long(argc,argv, "I:d:n:m:u:S:o:h", longopts, &index)) != -1)
 	{
 		switch(iarg)
 		{
@@ -123,6 +124,9 @@ int main(int argc, char** argv)
 				break;
 			case 'm':
 				mm = strtol(optarg, NULL, 10);
+				break;
+			case 'S':
+				Seed = strtol(optarg, NULL, 10);
 				break;
 			case 'o':
 				OutFile.open(optarg);
@@ -179,8 +183,7 @@ int main(int argc, char** argv)
 	const unsigned int nD = 8;
 	typedef Eigen::Matrix<std::complex<long double>, nD, nD> LDMatrixXcd;
 
-	unsigned long seed = std::chrono::system_clock::now().time_since_epoch()/std::chrono::milliseconds(1);
-	std::mt19937 MT(seed);
+	std::mt19937 MT(Seed);
 	
 	std::uniform_int_distribution<int> dPow(6, 12);
 	std::uniform_int_distribution<int> nPow(6, 12);
