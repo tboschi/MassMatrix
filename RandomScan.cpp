@@ -4,6 +4,8 @@
 #include <complex>
 #include <random>
 #include <chrono>
+#include <vector>
+#include <algorithm>
 #include <getopt.h>
 
 #include <Eigen/Dense>
@@ -11,20 +13,29 @@
 
 //#include "TRandom3.h"
 
+template <typename Derived>
+class Sorter
+{
+	private:
+		Eigen::SelfAdjointEigenSolver<Derived> Solver;
+	public:
+		Sorter(Eigen::SelfAdjointEigenSolver<Derived> &C) : Solver(C) {}
+		bool operator()(int i, int j) const
+		{
+			//return std::abs(vInd.at(i)) < std::abs(vInd.at(j));
+			//return vInd.at(i) < vInd.at(j);
+			return std::abs(Solver.eigenvalues()[i]) < std::abs(Solver.eigenvalues()[j]);
+		}
+};
+
 //from nufit 18
 template <typename Derived>
-//bool Pass(const Eigen::MatrixBase<Derived1> &U, const Eigen::ArrayBase<Derived2> &L)
-bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C)
+bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C, std::vector<unsigned int> &vI)
 {
-	double mm1 = C.eigenvalues()[0];
-	double mm2 = C.eigenvalues()[1];
-	double mm3 = C.eigenvalues()[2];
-
-	if (mm1 < 0 || mm2 < 0 || mm3 < 0)
-		return false;
-	else
-	{
-
+	double mm1 = C.eigenvalues()[vI.at(0)];
+	double mm2 = C.eigenvalues()[vI.at(1)];
+	double mm3 = C.eigenvalues()[vI.at(2)];
+	double mm4 = C.eigenvalues()[vI.at(3)];
 
 	/*
 	double uue1 = std::abs(C.eigenvectors()(0,0));
@@ -58,16 +69,16 @@ bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C)
 	bool Ut3 = (uut3 > PMNSmin(2,2) && uut3 < PMNSmax(2,2));
 	*/
 	
-		bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
-		bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
-		return  M21 &&	M31 ;
-		//	Ue1 &&	Ue2 &&	Ue3 && 
-		//	Um1 &&	Um2 &&	Um3 && 
-		//	Ut1 &&	Ut2 &&	Ut3 ;
-	}
+	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
+	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
+	bool Ms4 = (sqrt(mm4) > 1e6	&& sqrt(mm4) < 500e6);
+	return  M21 &&	M31 && Ms4;
+	//	Ue1 &&	Ue2 &&	Ue3 && 
+	//	Um1 &&	Um2 &&	Um3 && 
+	//	Ut1 &&	Ut2 &&	Ut3 ;
 }
 
-void Pol2Cart(std::complex<double> &w, double lMod, double Phs)
+void Pol2Cart(std::complex<long double> &w, long double lMod, long double Phs)
 {
 	w.real(pow(10, lMod)*cos(Phs));
 	w.imag(pow(10, lMod)*sin(Phs));
@@ -163,94 +174,103 @@ int main(int argc, char** argv)
 	//if (sqrt(mme) < 2.05)
 	//	ok;
 
-	unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+	const unsigned int nD = 8;
+	typedef Eigen::Matrix<std::complex<long double>, nD, nD> LDMatrixXcd;
+
+	unsigned long seed = std::chrono::system_clock::now().time_since_epoch()/std::chrono::milliseconds(1);
 	std::mt19937 MT(seed);
 	
-	//std::uniform_int_distribution<int> dExp(3, 9);
-	//std::uniform_int_distribution<int> nExp(6, 15);
-	//std::uniform_int_distribution<int> uExp(3, 9);
-	//std::uniform_int_distribution<int> mExp(-5, 0);
+	std::uniform_int_distribution<int> dPow(6, 9);
+	std::uniform_int_distribution<int> nPow(6, 9);
+	std::uniform_int_distribution<int> uPow(-1, 4);
+	std::uniform_int_distribution<int> mPow(-3, 0);
 
-	std::uniform_int_distribution<int> Pow(-5, 15);
-	std::uniform_real_distribution<double> Val(0, 1);
-	std::uniform_real_distribution<double> Phase(0, 2*Pi);
+	std::uniform_real_distribution<long double> Val(0, 1);
+	std::uniform_real_distribution<long double> Phase(0, 2*Pi);
 
-	std::complex<double> d11, d12, d21, d22, d31, d32;
-	std::complex<double> n11, n12, n13, n21, n22, n23;
-	std::complex<double> u11, u12, u13, u22, u23, u33;
-	std::complex<double> m11, m12, m22;
+	std::complex<long double> d11, d12, d21, d22, d31, d32;
+	std::complex<long double> n11, n12, n13, n21, n22, n23;
+	std::complex<long double> u11, u12, u13, u22, u23, u33;
+	std::complex<long double> m11, m12, m22;
 
-	unsigned int nD = 8;
 	unsigned int nIter = 0;
 	while (nIter < nMAX)
 	{
-		double dPow = Pow(MT);
-		Pol2Cart(d11, dPow+Val(MT), Phase(MT));
-		Pol2Cart(d12, dPow+Val(MT), Phase(MT));
-		Pol2Cart(d21, dPow+Val(MT), Phase(MT));
-		Pol2Cart(d22, dPow+Val(MT), Phase(MT));
-		Pol2Cart(d31, dPow+Val(MT), Phase(MT));
-		Pol2Cart(d32, dPow+Val(MT), Phase(MT));
-		double nPow = Pow(MT);
-		Pol2Cart(n11, nPow+Val(MT), Phase(MT));
-		Pol2Cart(n12, nPow+Val(MT), Phase(MT));
-		Pol2Cart(n13, nPow+Val(MT), Phase(MT));
-		Pol2Cart(n21, nPow+Val(MT), Phase(MT));
-		Pol2Cart(n22, nPow+Val(MT), Phase(MT));
-		Pol2Cart(n23, nPow+Val(MT), Phase(MT));
-		double uPow = Pow(MT);
-		Pol2Cart(u11, uPow+Val(MT), Phase(MT));
-		Pol2Cart(u12, uPow+Val(MT), Phase(MT));
-		Pol2Cart(u13, uPow+Val(MT), Phase(MT));
-		Pol2Cart(u22, uPow+Val(MT), Phase(MT));
-		Pol2Cart(u23, uPow+Val(MT), Phase(MT));
-		Pol2Cart(u33, uPow+Val(MT), Phase(MT));
-		double mPow = Pow(MT);
-		Pol2Cart(m11, mPow+Val(MT), Phase(MT));
-		Pol2Cart(m12, mPow+Val(MT), Phase(MT));
-		Pol2Cart(m22, mPow+Val(MT), Phase(MT));
+		long double dBase = dPow(MT);
+		long double nBase = nPow(MT);
+		long double uBase = uPow(MT);
+		long double mBase = mPow(MT);
 
-		Eigen::MatrixXcd M(nD,nD);
-		M <<	0,	0,	0,	d11,	d12,	0,	0,	0,
+		Pol2Cart(d11, dBase+Val(MT), Phase(MT));
+		Pol2Cart(d12, dBase+Val(MT), Phase(MT));
+		Pol2Cart(d21, dBase+Val(MT), Phase(MT));
+		Pol2Cart(d22, dBase+Val(MT), Phase(MT));
+		Pol2Cart(d31, dBase+Val(MT), Phase(MT));
+		Pol2Cart(d32, dBase+Val(MT), Phase(MT));
+		Pol2Cart(n11, nBase+Val(MT), Phase(MT));
+		Pol2Cart(n12, nBase+Val(MT), Phase(MT));
+		Pol2Cart(n13, nBase+Val(MT), Phase(MT));
+		Pol2Cart(n21, nBase+Val(MT), Phase(MT));
+		Pol2Cart(n22, nBase+Val(MT), Phase(MT));
+		Pol2Cart(n23, nBase+Val(MT), Phase(MT));
+		Pol2Cart(u11, uBase+Val(MT), Phase(MT));
+		Pol2Cart(u12, uBase+Val(MT), Phase(MT));
+		Pol2Cart(u13, uBase+Val(MT), Phase(MT));
+		Pol2Cart(u22, uBase+Val(MT), Phase(MT));
+		Pol2Cart(u23, uBase+Val(MT), Phase(MT));
+		Pol2Cart(u33, uBase+Val(MT), Phase(MT));
+		Pol2Cart(m11, mBase+Val(MT), Phase(MT));
+		Pol2Cart(m12, mBase+Val(MT), Phase(MT));
+		Pol2Cart(m22, mBase+Val(MT), Phase(MT));
+
+		//LDMatrixXcd M0(nD,nD), dM(nD,nD);
+		LDMatrixXcd M0, dM, M, M2;
+		M0 <<	0,	0,	0,	d11,	d12,	0,	0,	0,
 		  	0,	0,	0,	d21,	d22,	0,	0,	0,
 			0,	0,	0,	d31,	d32,	0,	0,	0,
-			d11,	d21,	d31,	m11,	m12,	n11,	n12,	n13,
-			d12,	d22,	d32,	m12,	m22,	n21,	n22,	n23,
-			0,	0,	0,	n11,	n21,	u11,	u12,	u13,
-			0,	0,	0,	n12,	n22,	u12,	u22,	u23,
-			0,	0,	0,	n13,	n23,	u13,	u23,	u33;
+			d11,	d21,	d31,	0,	0,	n11,	n12,	n13,
+			d12,	d22,	d32,	0,	0,	n11,	n22,	n23,
+			0,	0,	0,	n11,	n21,	0,	0,	0,
+			0,	0,	0,	n12,	n22,	0,	0,	0,
+			0,	0,	0,	n13,	n23,	0,	0,	0;
 			
+		dM <<	0,	0,	0,	0,	0,	0,	0,	0,
+		  	0,	0,	0,	0,	0,	0,	0,	0,
+			0,	0,	0,	0,	0,	0,	0,	0,
+			0,	0,	0,	m11,	m12,	0,	0,	0,
+			0,	0,	0,	m12,	m22,	0,	0,	0,
+			0,	0,	0,	0,	0,	u11,	u12,	u13,
+			0,	0,	0,	0,	0,	u12,	u22,	u23,
+			0,	0,	0,	0,	0,	u13,	u23,	u33;
 	
-		//Diagonalise;
-		//std::cout << M << std::endl;
-		//std::cout << M.cwiseAbs() << std::endl << std::endl;
-		//std::cout << std::endl;
+		M = M0 + dM;
+		M2 = M.adjoint() * M;
 	
-		Eigen::MatrixXcd M2 = M * M.adjoint();
-		//std::cout << M2 << std::endl;
-		//std::cout << M2.cwiseAbs() << std::endl;
-		//std::cout << std::endl;
+		//LDMatrixXcd M2 = M0.adjoint() * M0 + 
+		//		      dM.adjoint()*M0 + M0.adjoint()*dM ;//+
+				      //dM.adjoint()*dM;
 
-		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> Ces(M2);
+		Eigen::SelfAdjointEigenSolver<LDMatrixXcd> Ces(M2);
 	
-		//std::cout << Ces.eigenvalues() << std::endl;
-		//std::cout << Ces.eigenvectors().real() << std::endl;
-	
-		//Out << nPow << "\t" << dPow << "\t" << uPow << "\t" << mPow << "\t";
-		//for (unsigned int i = 0 ;  i < nD; ++i)
-		//	Out << sqrt(std::abs(Ces.eigenvalues()[i])) << "\t";
-		//std::cout << std::abs(Ces.eigenvalues()[2]) << "\t" << std::abs(Ces.eigenvalues()[1]) << std::endl;
+		//std::cout << "DetM  " << std::abs(M.determinant())  << std::endl;
+		//std::cout << "DetM2 " << std::abs(M2.determinant()) << std::endl;
 
-		//double asd21 = std::abs(Ces.eigenvalues()[1]) - std::abs(Ces.eigenvalues()[0]);
-		//double asd31 = std::abs(Ces.eigenvalues()[2]) - std::abs(Ces.eigenvalues()[0]);
-		//std::cout << "diff masses1 : " << dmm21 << "\t" << dmm31 << std::endl;
-		//std::cout << "diff masses2 : " << asd21 << "\t" << asd31 << std::endl;
-		//std::cout << Ces.eigenvalues()[0] << "\t"; 
-		//std::cout << Ces.eigenvalues()[3] << "\t"; 
-		//std::cout << std::abs(Ces.eigenvectors()(0,3)) << "\t"; 
-		//std::cout << std::abs(Ces.eigenvectors()(3,0)) << std::endl;
-		if (Pass(Ces))
-			Out << dPow << "\t" << nPow << "\t" << uPow << "\t" << mPow << std::endl;
+		std::vector<unsigned int> vI;
+		for (unsigned int i = 0; i < nD; ++i)
+			vI.push_back(i);
+	
+		std::sort(vI.begin(), vI.end(), Sorter<LDMatrixXcd>(Ces));
+
+		if (Pass(Ces, vI))
+		{
+			Out << dBase << "\t"; 
+			Out << nBase << "\t"; 
+			Out << uBase << "\t" ;
+			Out << mBase << "\t";
+			for (auto i : vI)
+				Out << std::abs(Ces.eigenvalues()[vI.at(i)]) << "\t"; 
+			Out << std::endl;
+		}
 
 		++nIter;
 	}
