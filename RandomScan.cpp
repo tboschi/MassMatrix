@@ -135,6 +135,7 @@ int main(int argc, char** argv)
 	}
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
+	/*
 	double dmm21 = 7.4e-5;		//eV2
 	double dmm31 = 2.494e-3;		//eV2
 
@@ -173,6 +174,7 @@ int main(int argc, char** argv)
 	//std::cout << "light masses : " << mm1 << "\t" << mm2 << "\t" << mm3 << std::endl;
 	//if (sqrt(mme) < 2.05)
 	//	ok;
+	*/
 
 	const unsigned int nD = 8;
 	typedef Eigen::Matrix<std::complex<long double>, nD, nD> LDMatrixXcd;
@@ -180,10 +182,10 @@ int main(int argc, char** argv)
 	unsigned long seed = std::chrono::system_clock::now().time_since_epoch()/std::chrono::milliseconds(1);
 	std::mt19937 MT(seed);
 	
-	std::uniform_int_distribution<int> dPow(6, 9);
-	std::uniform_int_distribution<int> nPow(6, 9);
-	std::uniform_int_distribution<int> uPow(-1, 4);
-	std::uniform_int_distribution<int> mPow(-3, 0);
+	std::uniform_int_distribution<int> dPow(6, 12);
+	std::uniform_int_distribution<int> nPow(6, 12);
+	std::uniform_int_distribution<int> uPow(0, 9);
+	std::uniform_int_distribution<int> mPow(-3, 3);
 
 	std::uniform_real_distribution<long double> Val(0, 1);
 	std::uniform_real_distribution<long double> Phase(0, 2*Pi);
