@@ -71,7 +71,7 @@ bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C, std::vector<unsigned 
 	
 	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
 	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
-	bool Ms4 = (sqrt(mm4) > 1e6	&& sqrt(mm4) < 500e6);
+	bool Ms4 = (sqrt(mm4) > 1e3	&& sqrt(mm4) < 1e9);
 	return  M21 &&	M31 && Ms4;
 	//	Ue1 &&	Ue2 &&	Ue3 && 
 	//	Um1 &&	Um2 &&	Um3 && 
@@ -185,10 +185,10 @@ int main(int argc, char** argv)
 
 	std::mt19937 MT(Seed);
 	
-	std::uniform_int_distribution<int> dPow(6, 12);
-	std::uniform_int_distribution<int> nPow(6, 12);
-	std::uniform_int_distribution<int> uPow(0, 9);
-	std::uniform_int_distribution<int> mPow(-3, 3);
+	std::uniform_int_distribution<int> dPow(3, 11);
+	std::uniform_int_distribution<int> nPow(4, 14);
+	std::uniform_int_distribution<int> uPow(-2, 5);
+	std::uniform_int_distribution<int> mPow(-2, 6);
 
 	std::uniform_real_distribution<long double> Val(0, 1);
 	std::uniform_real_distribution<long double> Phase(0, 2*Pi);
