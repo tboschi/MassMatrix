@@ -12,23 +12,25 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
 
-//#include "TTree.h"
+#include "TTree.h"
+#include "TFile.h"
 
 //from nufit 18
 template <typename Derived>
 bool Pass(const Eigen::JacobiSVD<Derived> &S)	//SVD are in descending order
 {
 	unsigned int nS = S.singularValues().size();
-	double m1 = S.singularValues()[nS-1];
-	double m2 = S.singularValues()[nS-2];
-	double m3 = S.singularValues()[nS-3];
+	double mm1 = pow(S.singularValues()[nS-1], 2);
+	double mm2 = pow(S.singularValues()[nS-2], 2);
+	double mm3 = pow(S.singularValues()[nS-3], 2);
 	double m4 = S.singularValues()[nS-4];
 
-	double mm1 = m1*m1;
-	double mm2 = m2*m2;
-	double mm3 = m3*m3;
+	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
+	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
+	bool Ms4 = (m4 > 1e5		&& m4 < 5e9);
 
 	//should be ok!
+	/*
 	double uue1 = std::abs(S.matrixV()(0, nS-1));
 	double uue2 = std::abs(S.matrixV()(0, nS-2));
 	double uue3 = std::abs(S.matrixV()(0, nS-3));
@@ -68,10 +70,8 @@ bool Pass(const Eigen::JacobiSVD<Derived> &S)	//SVD are in descending order
 	bool Ut1 = (uut1 > PMNSmin(2,0) && uut1 < PMNSmax(2,0));
 	bool Ut2 = (uut2 > PMNSmin(2,1) && uut2 < PMNSmax(2,1));
 	bool Ut3 = (uut3 > PMNSmin(2,2) && uut3 < PMNSmax(2,2));
+	*/
 	
-	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
-	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
-	bool Ms4 = (m4 > 1e5		&& m4 < 5e9);
 	/*
 	if (M21 && M31 && Ms4)
 	{
@@ -114,35 +114,27 @@ int main(int argc, char** argv)
 	opterr = 1;
 
 	std::ofstream OutFile;
+	TFile *RootFile;
 	int dd = 9, nn = 12, mm = 0, uu = 6;
 	unsigned int nMAX = 10000;
 	unsigned long Seed = std::chrono::system_clock::now().time_since_epoch()/std::chrono::milliseconds(1);
 	double CL = 0.90;	//90% C.L.
 
-	while((iarg = getopt_long(argc,argv, "I:d:n:m:u:S:o:h", longopts, &index)) != -1)
+	while((iarg = getopt_long(argc,argv, "I:S:o:r:h", longopts, &index)) != -1)
 	{
 		switch(iarg)
 		{
 			case 'I':
 				nMAX = strtol(optarg, NULL, 10);
 				break;
-			case 'd':
-				dd = strtol(optarg, NULL, 10);
-				break;
-			case 'n':
-				nn = strtol(optarg, NULL, 10);
-				break;
-			case 'u':
-				uu = strtol(optarg, NULL, 10);
-				break;
-			case 'm':
-				mm = strtol(optarg, NULL, 10);
-				break;
 			case 'S':
 				Seed = strtol(optarg, NULL, 10);
 				break;
 			case 'o':
 				OutFile.open(optarg);
+				break;
+			case 'r':
+				RootFile = new TFile(optarg, "RECREATE");
 				break;
 			case 'h':
 				return 1;
@@ -152,53 +144,27 @@ int main(int argc, char** argv)
 	}
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
-	/*
-	double dmm21 = 7.4e-5;		//eV2
-	double dmm31 = 2.494e-3;		//eV2
+	unsigned int nD = 8;
+	TTree *tEigen = new TTree("Eigen", "eigen");
 
-	double t12 = 33.62 * deg;
-	double t23 = 47.2  * deg;
-	double t13 = 8.54  * deg;
-	double cp  = 234   * deg;
-	std::complex<double> dcp(cos(cp), -sin(cp));
-	Eigen::Matrix3cd U1, U2, U3, PMNS;
+	int N, D, U, M;
+	double MM[nD], VE[nD], VM[nD], VT[nD];
 
-	U1 <<	1, 		0, 		0,
-	   	0, 		cos(t23),	sin(t23),
-		0, 		-sin(t23), 	cos(t23);
+	tEigen->Branch("nD", &nD, "fnD/i");
 
-	U2 <<	cos(t13),	0, 		sin(t23)*dcp,
-	   	0, 		1,		0,
-		-sin(t13)*dcp, 	0,		cos(t13);
+	tEigen->Branch("N", N, "fN/I");
+	tEigen->Branch("D", D, "fD/I");
+	tEigen->Branch("U", U, "fU/I");
+	tEigen->Branch("M", M, "fM/I");
+	
+	tEigen->Branch("MM", MM, "fMM[nD]/D");
 
-	U3 <<	cos(t12), 	sin(t12),	0,
-	   	-sin(t12), 	cos(t12),	0,
-		0,		0,		1;
-
-	PMNS = U1 * U2 * U3;
-	//std::cout << "PMNS matrix is " << std::endl;
-	//std::cout << PMNS << std::endl;
-	//std::cout << PMNS.cwiseAbs() << std::endl;
-
-	double mm1 = 0;
-	double mm2 = mm1 + dmm21;
-	double mm3 = mm1 + dmm31;
-
-	double mme = std::abs(PMNS(1,1)) * mm1 +
-		     std::abs(PMNS(1,2)) * mm2 +
-		     std::abs(PMNS(1,2)) * mm2 ;
-
-	//std::cout << "light masses : " << mm1 << "\t" << mm2 << "\t" << mm3 << std::endl;
-	//if (sqrt(mme) < 2.05)
-	//	ok;
-	*/
-
-	const unsigned int nD = 8;
-	//typedef Eigen::Matrix<std::complex<double>, nD, nD> LDMatrixXcd;
+	tEigen->Branch("VE", VE, "fVE[nD]/D");
+	tEigen->Branch("VM", VM, "fVM[nD]/D");
+	tEigen->Branch("VT", VT, "fVT[nD]/D");
 
 	std::mt19937 MT(Seed);
 	
-	//U < D < N	is a good condition
 	std::uniform_int_distribution<int> nPow( 7, 15);
 	std::uniform_int_distribution<int> dPow( 3, 11);
 	std::uniform_int_distribution<int> uPow( 4, 10);
@@ -207,51 +173,50 @@ int main(int argc, char** argv)
 	std::uniform_real_distribution<double> Val(0, 1);
 	std::uniform_real_distribution<double> Phase(0, 2*Pi);
 
-	std::complex<double> d11, d12, d21, d22, d31, d32;
 	std::complex<double> n11, n12, n13, n21, n22, n23;
+	std::complex<double> d11, d12, d21, d22, d31, d32;
 	std::complex<double> u11, u12, u13, u22, u23, u33;
 	std::complex<double> m11, m12, m22;
 
 	unsigned int nIter = 0;
 	while (nIter < nMAX)
 	{
-		double dBase = dPow(MT);
-		double nBase = nPow(MT);
-		double uBase = uPow(MT);
-		double mBase = mPow(MT);
+		N = nPow(MT);
+		D = dPow(MT);
+		U = uPow(MT);
+		M = mPow(MT);
 
 		//naturalness conditions
-		if (dBase > nBase)
-			continue;
-		if (uBase > nBase)
-			continue;
-		if (nBase - dBase > 6)
+		//U < N and (D > N-6 & D < N)
+		if ((U > N) || (N - D < 0) || (N - D > 6))
 			continue;
 
-		Pol2Cart(d11, dBase+Val(MT), Phase(MT));
-		Pol2Cart(d12, dBase+Val(MT), Phase(MT));
-		Pol2Cart(d21, dBase+Val(MT), Phase(MT));
-		Pol2Cart(d22, dBase+Val(MT), Phase(MT));
-		Pol2Cart(d31, dBase+Val(MT), Phase(MT));
-		Pol2Cart(d32, dBase+Val(MT), Phase(MT));
-		Pol2Cart(n11, nBase+Val(MT), Phase(MT));
-		Pol2Cart(n12, nBase+Val(MT), Phase(MT));
-		Pol2Cart(n13, nBase+Val(MT), Phase(MT));
-		Pol2Cart(n21, nBase+Val(MT), Phase(MT));
-		Pol2Cart(n22, nBase+Val(MT), Phase(MT));
-		Pol2Cart(n23, nBase+Val(MT), Phase(MT));
-		Pol2Cart(u11, uBase+Val(MT), Phase(MT));
-		Pol2Cart(u12, uBase+Val(MT), Phase(MT));
-		Pol2Cart(u13, uBase+Val(MT), Phase(MT));
-		Pol2Cart(u22, uBase+Val(MT), Phase(MT));
-		Pol2Cart(u23, uBase+Val(MT), Phase(MT));
-		Pol2Cart(u33, uBase+Val(MT), Phase(MT));
-		Pol2Cart(m11, mBase+Val(MT), Phase(MT));
-		Pol2Cart(m12, mBase+Val(MT), Phase(MT));
-		Pol2Cart(m22, mBase+Val(MT), Phase(MT));
+		Pol2Cart(n11, N+Val(MT), Phase(MT));
+		Pol2Cart(n12, N+Val(MT), Phase(MT));
+		Pol2Cart(n13, N+Val(MT), Phase(MT));
+		Pol2Cart(n21, N+Val(MT), Phase(MT));
+		Pol2Cart(n22, N+Val(MT), Phase(MT));
+		Pol2Cart(n23, N+Val(MT), Phase(MT));
 
-		//Eigen::MatrixXcd M0(nD,nD), dM(nD,nD);
-		Eigen::MatrixXcd M(nD, nD), M2(nD, nD);
+		Pol2Cart(d11, D+Val(MT), Phase(MT));
+		Pol2Cart(d12, D+Val(MT), Phase(MT));
+		Pol2Cart(d21, D+Val(MT), Phase(MT));
+		Pol2Cart(d22, D+Val(MT), Phase(MT));
+		Pol2Cart(d31, D+Val(MT), Phase(MT));
+		Pol2Cart(d32, D+Val(MT), Phase(MT));
+
+		Pol2Cart(u11, U+Val(MT), Phase(MT));
+		Pol2Cart(u12, U+Val(MT), Phase(MT));
+		Pol2Cart(u13, U+Val(MT), Phase(MT));
+		Pol2Cart(u22, U+Val(MT), Phase(MT));
+		Pol2Cart(u23, U+Val(MT), Phase(MT));
+		Pol2Cart(u33, U+Val(MT), Phase(MT));
+
+		Pol2Cart(m11, M+Val(MT), Phase(MT));
+		Pol2Cart(m12, M+Val(MT), Phase(MT));
+		Pol2Cart(m22, M+Val(MT), Phase(MT));
+
+		Eigen::MatrixXcd M(nD, nD);
 		M <<	0,	0,	0,	d11,	d12,	0,	0,	0,
 		  	0,	0,	0,	d21,	d22,	0,	0,	0,
 			0,	0,	0,	d31,	d32,	0,	0,	0,
@@ -261,20 +226,25 @@ int main(int argc, char** argv)
 			0,	0,	0,	n12,	n22,	u12,	u22,	u23,
 			0,	0,	0,	n13,	n23,	u13,	u23,	u33;
 			
-		M2 = M.adjoint() * M;
-	
-		//Eigen::MatrixXcd M2 = M0.adjoint() * M0 + 
-		//		      dM.adjoint()*M0 + M0.adjoint()*dM ;//+
-				      //dM.adjoint()*dM;
-
-		Eigen::JacobiSVD<Eigen::MatrixXcd> svd(M, Eigen::ComputeFullV);		//V is PMNS matrix..?
+		//V is PMNS matrix
+		Eigen::JacobiSVD<Eigen::MatrixXcd> svd(M, Eigen::ComputeFullV);
 	
 		if (Pass(svd))
 		{
-			Out << dBase << "\t"; 
-			Out << nBase << "\t"; 
-			Out << uBase << "\t" ;
-			Out << mBase << "\t";
+			for (unsigned int i = 0; i < nD; ++i)
+			{
+				MM[i] = std::abs(svd.singularValues()[i]);
+				VE[i] = std::abs(svd.matrixV()(0, nD-i));
+				VM[i] = std::abs(svd.matrixV()(1, nD-i));
+				VT[i] = std::abs(svd.matrixV()(2, nD-i));
+			}
+
+			tEigen->Fill();
+
+			Out << N << "\t"; 
+			Out << D << "\t"; 
+			Out << U << "\t" ;
+			Out << M << "\t";
 			for (unsigned int i = 0; i < nD; ++i)
 				Out << std::abs(svd.singularValues()[i]) << "\t"; 
 			Out << std::abs(svd.matrixV()(0, nD-4)) << "\t";	//e4
@@ -285,6 +255,8 @@ int main(int argc, char** argv)
 
 		++nIter;
 	}
+
+	tEigen->Write();
 
 	return 0;
 }
