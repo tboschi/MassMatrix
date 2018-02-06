@@ -10,54 +10,55 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 
-//#include "TRandom3.h"
-
-template <typename Derived>
-class Sorter
-{
-	private:
-		Eigen::SelfAdjointEigenSolver<Derived> Solver;
-	public:
-		Sorter(Eigen::SelfAdjointEigenSolver<Derived> &C) : Solver(C) {}
-		bool operator()(int i, int j) const
-		{
-			//return std::abs(vInd.at(i)) < std::abs(vInd.at(j));
-			//return vInd.at(i) < vInd.at(j);
-			return std::abs(Solver.eigenvalues()[i]) < std::abs(Solver.eigenvalues()[j]);
-		}
-};
+//#include "TTree.h"
 
 //from nufit 18
 template <typename Derived>
-bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C, std::vector<unsigned int> &vI)
+bool Pass(const Eigen::JacobiSVD<Derived> &S)	//SVD are in descending order
 {
-	double mm1 = C.eigenvalues()[vI.at(0)];
-	double mm2 = C.eigenvalues()[vI.at(1)];
-	double mm3 = C.eigenvalues()[vI.at(2)];
-	double mm4 = C.eigenvalues()[vI.at(3)];
+	unsigned int nS = S.singularValues().size();
+	double m1 = S.singularValues()[nS-1];
+	double m2 = S.singularValues()[nS-2];
+	double m3 = S.singularValues()[nS-3];
+	double m4 = S.singularValues()[nS-4];
 
-	/*
-	double uue1 = std::abs(C.eigenvectors()(0,0));
-	double uue2 = std::abs(C.eigenvectors()(0,1));
-	double uue3 = std::abs(C.eigenvectors()(0,2));
-	double uum1 = std::abs(C.eigenvectors()(1,0));
-	double uum2 = std::abs(C.eigenvectors()(1,1));
-	double uum3 = std::abs(C.eigenvectors()(1,2));
-	double uut1 = std::abs(C.eigenvectors()(2,0));
-	double uut2 = std::abs(C.eigenvectors()(2,1));
-	double uut3 = std::abs(C.eigenvectors()(2,2));
-	*/
+	double mm1 = m1*m1;
+	double mm2 = m2*m2;
+	double mm3 = m3*m3;
+
+	//should be ok!
+	double uue1 = std::abs(S.matrixV()(0, nS-1));
+	double uue2 = std::abs(S.matrixV()(0, nS-2));
+	double uue3 = std::abs(S.matrixV()(0, nS-3));
+	double uum1 = std::abs(S.matrixV()(1, nS-1));
+	double uum2 = std::abs(S.matrixV()(1, nS-2));
+	double uum3 = std::abs(S.matrixV()(1, nS-3));
+	double uut1 = std::abs(S.matrixV()(2, nS-1));
+	double uut2 = std::abs(S.matrixV()(2, nS-2));
+	double uut3 = std::abs(S.matrixV()(2, nS-3));
 
 	
-	/*
-	Eigen::Matrix3d PMNSmin, PMNSmax;
+	Eigen::Matrix3d PMNSmin, PMNSmax, Vpmns;
 	PMNSmin <<	0.76,	0.50,	0.13,
 			0.21,	0.42,	0.61,
 			0.18,	0.38,	0.40;
 	PMNSmax <<	0.85,	0.60,	0.16,
 			0.54,	0.70,	0.79,
 			0.58,	0.72,	0.78;
+	Vpmns <<	uue1, 	uue2, 	uue3,
+	      		uum1, 	uum2, 	uum3,
+	      		uut1, 	uut2, 	uut3;
+
+	std::cout << "pmns check" << std::endl;
+	std::cout << PMNSmin << std::endl;
+	std::cout << std::endl;
+	std::cout << PMNSmax << std::endl;
+	std::cout << std::endl;
+	std::cout << Vpmns << std::endl;
+	std::cout << "____________________________________\n" << std::endl;
+
 	bool Ue1 = (uue1 > PMNSmin(0,0) && uue1 < PMNSmax(0,0));
 	bool Ue2 = (uue2 > PMNSmin(0,1) && uue2 < PMNSmax(0,1));
 	bool Ue3 = (uue3 > PMNSmin(0,2) && uue3 < PMNSmax(0,2));
@@ -67,18 +68,30 @@ bool Pass(const Eigen::SelfAdjointEigenSolver<Derived> &C, std::vector<unsigned 
 	bool Ut1 = (uut1 > PMNSmin(2,0) && uut1 < PMNSmax(2,0));
 	bool Ut2 = (uut2 > PMNSmin(2,1) && uut2 < PMNSmax(2,1));
 	bool Ut3 = (uut3 > PMNSmin(2,2) && uut3 < PMNSmax(2,2));
-	*/
 	
 	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
 	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
-	bool Ms4 = (sqrt(mm4) > 1e3	&& sqrt(mm4) < 1e9);
-	return  M21 &&	M31 && Ms4;
+	bool Ms4 = (m4 > 1e5		&& m4 < 5e9);
+	/*
+	if (M21 && M31 && Ms4)
+	{
+		Eigen::Matrix3d Vpmns;
+		std::cout << std::endl;
+		std::cout << S.matrixV().cwiseAbs() << std::endl;
+		std::cout << std::endl;
+		std::cout << Vpmns << std::endl;
+		std::cout << std::endl;
+		std::cout << std::endl;
+	}
+	*/
+	
+	return  M21 &&	M31 &&	Ms4;	//&&	
 	//	Ue1 &&	Ue2 &&	Ue3 && 
 	//	Um1 &&	Um2 &&	Um3 && 
 	//	Ut1 &&	Ut2 &&	Ut3 ;
 }
 
-void Pol2Cart(std::complex<long double> &w, long double lMod, long double Phs)
+void Pol2Cart(std::complex<double> &w, double lMod, double Phs)
 {
 	w.real(pow(10, lMod)*cos(Phs));
 	w.imag(pow(10, lMod)*sin(Phs));
@@ -181,30 +194,39 @@ int main(int argc, char** argv)
 	*/
 
 	const unsigned int nD = 8;
-	typedef Eigen::Matrix<std::complex<long double>, nD, nD> LDMatrixXcd;
+	//typedef Eigen::Matrix<std::complex<double>, nD, nD> LDMatrixXcd;
 
 	std::mt19937 MT(Seed);
 	
-	std::uniform_int_distribution<int> nPow(4, 15);
-	std::uniform_int_distribution<int> dPow(3, 15);
-	std::uniform_int_distribution<int> uPow(2, 10);
-	//std::uniform_int_distribution<int> mPow(-2, 6);
+	//U < D < N	is a good condition
+	std::uniform_int_distribution<int> nPow( 7, 15);
+	std::uniform_int_distribution<int> dPow( 3, 11);
+	std::uniform_int_distribution<int> uPow( 4, 10);
+	std::uniform_int_distribution<int> mPow(-3,  3);
 
-	std::uniform_real_distribution<long double> Val(0, 1);
-	std::uniform_real_distribution<long double> Phase(0, 2*Pi);
+	std::uniform_real_distribution<double> Val(0, 1);
+	std::uniform_real_distribution<double> Phase(0, 2*Pi);
 
-	std::complex<long double> d11, d12, d21, d22, d31, d32;
-	std::complex<long double> n11, n12, n13, n21, n22, n23;
-	std::complex<long double> u11, u12, u13, u22, u23, u33;
-	std::complex<long double> m11, m12, m22;
+	std::complex<double> d11, d12, d21, d22, d31, d32;
+	std::complex<double> n11, n12, n13, n21, n22, n23;
+	std::complex<double> u11, u12, u13, u22, u23, u33;
+	std::complex<double> m11, m12, m22;
 
 	unsigned int nIter = 0;
 	while (nIter < nMAX)
 	{
-		long double dBase = dPow(MT);
-		long double nBase = nPow(MT);
-		long double uBase = uPow(MT);
-		//long double mBase = mPow(MT);
+		double dBase = dPow(MT);
+		double nBase = nPow(MT);
+		double uBase = uPow(MT);
+		double mBase = mPow(MT);
+
+		//naturalness conditions
+		if (dBase > nBase)
+			continue;
+		if (uBase > nBase)
+			continue;
+		if (nBase - dBase > 6)
+			continue;
 
 		Pol2Cart(d11, dBase+Val(MT), Phase(MT));
 		Pol2Cart(d12, dBase+Val(MT), Phase(MT));
@@ -224,56 +246,40 @@ int main(int argc, char** argv)
 		Pol2Cart(u22, uBase+Val(MT), Phase(MT));
 		Pol2Cart(u23, uBase+Val(MT), Phase(MT));
 		Pol2Cart(u33, uBase+Val(MT), Phase(MT));
-		//Pol2Cart(m11, mBase+Val(MT), Phase(MT));
-		//Pol2Cart(m12, mBase+Val(MT), Phase(MT));
-		//Pol2Cart(m22, mBase+Val(MT), Phase(MT));
+		Pol2Cart(m11, mBase+Val(MT), Phase(MT));
+		Pol2Cart(m12, mBase+Val(MT), Phase(MT));
+		Pol2Cart(m22, mBase+Val(MT), Phase(MT));
 
-		//LDMatrixXcd M0(nD,nD), dM(nD,nD);
-		LDMatrixXcd M0, dM, M, M2;
-		M0 <<	0,	0,	0,	d11,	d12,	0,	0,	0,
+		//Eigen::MatrixXcd M0(nD,nD), dM(nD,nD);
+		Eigen::MatrixXcd M(nD, nD), M2(nD, nD);
+		M <<	0,	0,	0,	d11,	d12,	0,	0,	0,
 		  	0,	0,	0,	d21,	d22,	0,	0,	0,
 			0,	0,	0,	d31,	d32,	0,	0,	0,
-			d11,	d21,	d31,	0,	0,	n11,	n12,	n13,
-			d12,	d22,	d32,	0,	0,	n11,	n22,	n23,
-			0,	0,	0,	n11,	n21,	0,	0,	0,
-			0,	0,	0,	n12,	n22,	0,	0,	0,
-			0,	0,	0,	n13,	n23,	0,	0,	0;
+			d11,	d21,	d31,	m11,	m12,	n11,	n12,	n13,
+			d12,	d22,	d32,	m12,	m22,	n21,	n22,	n23,
+			0,	0,	0,	n11,	n21,	u11,	u12,	u13,
+			0,	0,	0,	n12,	n22,	u12,	u22,	u23,
+			0,	0,	0,	n13,	n23,	u13,	u23,	u33;
 			
-		dM <<	0,	0,	0,	0,	0,	0,	0,	0,
-		  	0,	0,	0,	0,	0,	0,	0,	0,
-			0,	0,	0,	0,	0,	0,	0,	0,
-			0,	0,	0,	m11,	m12,	0,	0,	0,
-			0,	0,	0,	m12,	m22,	0,	0,	0,
-			0,	0,	0,	0,	0,	u11,	u12,	u13,
-			0,	0,	0,	0,	0,	u12,	u22,	u23,
-			0,	0,	0,	0,	0,	u13,	u23,	u33;
-	
-		M = M0 + dM;
 		M2 = M.adjoint() * M;
 	
-		//LDMatrixXcd M2 = M0.adjoint() * M0 + 
+		//Eigen::MatrixXcd M2 = M0.adjoint() * M0 + 
 		//		      dM.adjoint()*M0 + M0.adjoint()*dM ;//+
 				      //dM.adjoint()*dM;
 
-		Eigen::SelfAdjointEigenSolver<LDMatrixXcd> Ces(M2);
+		Eigen::JacobiSVD<Eigen::MatrixXcd> svd(M, Eigen::ComputeFullV);		//V is PMNS matrix..?
 	
-		//std::cout << "DetM  " << std::abs(M.determinant())  << std::endl;
-		//std::cout << "DetM2 " << std::abs(M2.determinant()) << std::endl;
-
-		std::vector<unsigned int> vI;
-		for (unsigned int i = 0; i < nD; ++i)
-			vI.push_back(i);
-	
-		std::sort(vI.begin(), vI.end(), Sorter<LDMatrixXcd>(Ces));
-
-		if (Pass(Ces, vI))
+		if (Pass(svd))
 		{
 			Out << dBase << "\t"; 
 			Out << nBase << "\t"; 
 			Out << uBase << "\t" ;
-			//Out << mBase << "\t";
-			for (auto i : vI)
-				Out << std::abs(Ces.eigenvalues()[vI.at(i)]) << "\t"; 
+			Out << mBase << "\t";
+			for (unsigned int i = 0; i < nD; ++i)
+				Out << std::abs(svd.singularValues()[i]) << "\t"; 
+			Out << std::abs(svd.matrixV()(0, nD-4)) << "\t";	//e4
+			Out << std::abs(svd.matrixV()(1, nD-4)) << "\t";	//m4
+			Out << std::abs(svd.matrixV()(2, nD-4)) << "\t";	//t4
 			Out << std::endl;
 		}
 
@@ -282,16 +288,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-/*
-void Populate(std::complex<double> &w, TRandom3 *Gen, double Min, double Max)	//radius in log scale
-{
-	double x, y, r = pow(10, Gen->Uniform(Min, Max));
-	Gen->Circle(x, y, r);
-
-	std::cout << "min " << Min << "\t" << r << std::endl;
-
-	w.real(x);
-	w.imag(y);
-}
-*/

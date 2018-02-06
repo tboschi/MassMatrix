@@ -10,6 +10,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 
 //#include "TRandom3.h"
 
@@ -24,7 +25,7 @@ class Sorter
 		{
 			//return std::abs(vInd.at(i)) < std::abs(vInd.at(j));
 			//return vInd.at(i) < vInd.at(j);
-			return std::abs(Solver.eigenvalues()[i]) < std::abs(Solver.eigenvalues()[j]);
+			return std::abs(Solver.eigenvalues()[i]) > std::abs(Solver.eigenvalues()[j]);
 		}
 };
 
@@ -256,6 +257,7 @@ int main(int argc, char** argv)
 				      //dM.adjoint()*dM;
 
 		Eigen::SelfAdjointEigenSolver<LDMatrixXcd> Ces(M2);
+		Eigen::JacobiSVD<LDMatrixXcd> svd(M);
 	
 		//std::cout << "DetM  " << std::abs(M.determinant())  << std::endl;
 		//std::cout << "DetM2 " << std::abs(M2.determinant()) << std::endl;
@@ -266,6 +268,18 @@ int main(int argc, char** argv)
 	
 		std::sort(vI.begin(), vI.end(), Sorter<LDMatrixXcd>(Ces));
 
+		for (unsigned int i = 0; i < nD; ++i)
+			Out << sqrt(std::abs(Ces.eigenvalues()[vI.at(i)])) << "\t"; 
+		Out << std::endl;
+
+		//const Eigen::VectorXd Singular = svd.singularValues();
+		for (unsigned int i = 0; i < nD; ++i)
+			//Out << Singular(i) << "\t";
+			Out << svd.singularValues()[i] << "\t";
+		Out << std::endl;
+		Out << std::endl;
+
+		/*
 		if (Pass(Ces, vI))
 		{
 			Out << dBase << "\t"; 
@@ -276,6 +290,7 @@ int main(int argc, char** argv)
 				Out << std::abs(Ces.eigenvalues()[vI.at(i)]) << "\t"; 
 			Out << std::endl;
 		}
+		*/
 
 		++nIter;
 	}
