@@ -6,7 +6,8 @@ LDFLAGS  := -Wl,--no-as-needed $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -Iinclude/
 
 #TGT =	RandomScan
-TGT =	SVD
+TGT =	SVD	\
+	GeneratePlot
 #TGT =	Test
 #TGT =	OneGeneration
 

@@ -15,33 +15,73 @@
 #include "TTree.h"
 #include "TFile.h"
 
+#include "Tools.h"
+
+double Gloop(double x)
+{
+	return - 0.25 * (2*x*x*x + 5*x*x - x) / pow((1-x), 3) -
+	       - 1.50 * (x*x*x) / pow(1-x, 4) * log(x);
+}
+
 //from nufit 18
 template <typename Derived>
 bool Pass(const Eigen::JacobiSVD<Derived> &S)	//SVD are in descending order
 {
-	unsigned int nS = S.singularValues().size();
-	double mm1 = pow(S.singularValues()[nS-1], 2);
-	double mm2 = pow(S.singularValues()[nS-2], 2);
-	double mm3 = pow(S.singularValues()[nS-3], 2);
-	double m4 = S.singularValues()[nS-4];
+	const unsigned int nS = S.singularValues().size();
+	double mm[nS];
+	Eigen::MatrixXcd V(nS, nS);
+	for (unsigned int i = 0; i < nS; ++i)
+	{
+		mm[i] = pow(S.singularValues()[nS-1-i], 2);
+		V.col(i) = S.matrixV().col(nS-1-i);
+	}	
 
-	bool M21 = (mm2-mm1 > 6.8e-5	&& mm2-mm1 < 8.02e-5);
-	bool M31 = (mm3-mm1 > 2.399e-3	&& mm3-mm1 < 2.593e-3);
-	bool Ms4 = (m4 > 1e5		&& m4 < 5e9);
+	bool M21 = (mm[1]-mm[0] > 6.8e-5	&& mm[1]-mm[0] < 8.02e-5);
+	bool M31 = (mm[2]-mm[0] > 2.399e-3	&& mm[2]-mm[0] < 2.593e-3);
+	bool Ms4 = (sqrt(mm[3]) > 1e5		&& sqrt(mm[3]) < 5e9);
 
-	//should be ok!
+	double p2 = -pow(125e6, 2);
+	std::complex<double>  MEGamp, BBeff;
+	for (unsigned int i = 0; i < nS; ++i)
+	{
+		MEGamp += std::conj(V(0, i)) * V(1, i) * Gloop( mm[i] / pow(Const::fMW, 2) );
+		BBeff += V(0, i) * V(0, i) * p2 * sqrt(mm[i]) / (p2 - mm[i]);
+	}
+	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
+
+	//bool MEG = MEGbranch < 4.2e-13;		//present
+	bool MEG = MEGbranch < 5e-14;		//future
+	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
+	bool BB0 = std::abs(BBeff) < 20e-3;	//future
+
+	Eigen::Matrix3d NSIabove, NSIbelow;
+	Eigen::Matrix3cd Kab;
+	NSIabove <<	4.0e-3,	1.2e-4,	3.2e-3,
+			1.2e-4,	1.6e-3,	2.1e-3,
+			3.2e-3,	2.1e-3,	5.3e-3;
+	NSIbelow <<	4.0e-3,	1.8e-3,	3.2e-3,
+		 	1.8e-3,	1.6e-3,	2.1e-3,
+			3.2e-3,	2.1e-3,	5.3e-3;
+	for (unsigned int i = 4; i < nS; ++i)
+	{
+		Kab(0,0) += V(0, i) * std::conj(V(0, i));
+		Kab(0,1) += V(0, i) * std::conj(V(1, i));
+		Kab(0,2) += V(0, i) * std::conj(V(2, i));
+		Kab(1,0) += V(1, i) * std::conj(V(0, i));
+		Kab(1,1) += V(1, i) * std::conj(V(1, i));
+		Kab(1,2) += V(1, i) * std::conj(V(2, i));
+		Kab(2,0) += V(2, i) * std::conj(V(0, i));
+		Kab(2,1) += V(2, i) * std::conj(V(1, i));
+		Kab(2,2) += V(2, i) * std::conj(V(2, i));
+	}
+
+	bool NSI = true;
+	bool EWscale = mm[4] > 246e9 && mm[5] > 249e9 && mm[6] > 249e9 && mm[7] > 249e9;
+	for (unsigned int c = 0; c < Kab.cols(); ++c)
+		for (unsigned int r = 0; r < Kab.rows(); ++r)
+			NSI *= EWscale ? Kab.cwiseAbs()(r, c) < NSIabove(r, c) : Kab.cwiseAbs()(r, c) < NSIbelow(r, c);
+	//
 	/*
-	double uue1 = std::abs(S.matrixV()(0, nS-1));
-	double uue2 = std::abs(S.matrixV()(0, nS-2));
-	double uue3 = std::abs(S.matrixV()(0, nS-3));
-	double uum1 = std::abs(S.matrixV()(1, nS-1));
-	double uum2 = std::abs(S.matrixV()(1, nS-2));
-	double uum3 = std::abs(S.matrixV()(1, nS-3));
-	double uut1 = std::abs(S.matrixV()(2, nS-1));
-	double uut2 = std::abs(S.matrixV()(2, nS-2));
-	double uut3 = std::abs(S.matrixV()(2, nS-3));
-
-	
 	Eigen::Matrix3d PMNSmin, PMNSmax, Vpmns;
 	PMNSmin <<	0.76,	0.50,	0.13,
 			0.21,	0.42,	0.61,
@@ -49,43 +89,28 @@ bool Pass(const Eigen::JacobiSVD<Derived> &S)	//SVD are in descending order
 	PMNSmax <<	0.85,	0.60,	0.16,
 			0.54,	0.70,	0.79,
 			0.58,	0.72,	0.78;
-	Vpmns <<	uue1, 	uue2, 	uue3,
-	      		uum1, 	uum2, 	uum3,
-	      		uut1, 	uut2, 	uut3;
 
-	std::cout << "pmns check" << std::endl;
-	std::cout << PMNSmin << std::endl;
-	std::cout << std::endl;
-	std::cout << PMNSmax << std::endl;
-	std::cout << std::endl;
-	std::cout << Vpmns << std::endl;
-	std::cout << "____________________________________\n" << std::endl;
-
-	bool Ue1 = (uue1 > PMNSmin(0,0) && uue1 < PMNSmax(0,0));
-	bool Ue2 = (uue2 > PMNSmin(0,1) && uue2 < PMNSmax(0,1));
-	bool Ue3 = (uue3 > PMNSmin(0,2) && uue3 < PMNSmax(0,2));
-	bool Um1 = (uum1 > PMNSmin(1,0) && uum1 < PMNSmax(1,0));
-	bool Um2 = (uum2 > PMNSmin(1,1) && uum2 < PMNSmax(1,1));
-	bool Um3 = (uum3 > PMNSmin(1,2) && uum3 < PMNSmax(1,2));
-	bool Ut1 = (uut1 > PMNSmin(2,0) && uut1 < PMNSmax(2,0));
-	bool Ut2 = (uut2 > PMNSmin(2,1) && uut2 < PMNSmax(2,1));
-	bool Ut3 = (uut3 > PMNSmin(2,2) && uut3 < PMNSmax(2,2));
-	*/
+	bool PMNS = true;
+	for (unsigned int c = 0; c < PMNSmin.cols(); ++c)
+		for (unsigned int r = 0; r < PMNSmin.rows(); ++r)
+			PMNS *= V.cwiseAbs()(r, c) > PMNSmin(r, c) && V.cwiseAbs()(r, c) < PMNSmax(r, c);
 	
-	/*
+	//if (M21 && M31 && Ms4)
+	std::cout << "Full V " << std::endl << V.cwiseAbs() << std::endl;
+	std::cout << "myPMNS " << PMNS << std::endl << V.block<3,3>(0,0).cwiseAbs() << std::endl;
+	std::cout << "min PMNS " << std::endl << PMNSmin << std::endl;
+	std::cout << "max PMNS " << std::endl << PMNSmax << std::endl;
+	std::cout << "________________" << std::endl;
 	if (M21 && M31 && Ms4)
 	{
-		Eigen::Matrix3d Vpmns;
-		std::cout << std::endl;
-		std::cout << S.matrixV().cwiseAbs() << std::endl;
-		std::cout << std::endl;
-		std::cout << Vpmns << std::endl;
-		std::cout << std::endl;
+		std::cout << "MEG " << MEGbranch << "\t" << MEG << std::endl;
+		std::cout << "BB0 " << std::abs(BBeff) << "\t" << BB0 << std::endl;
 		std::cout << std::endl;
 	}
 	*/
-	
-	return  M21 &&	M31 &&	Ms4;	//&&	
+
+	return  M21 &&	M31 &&	Ms4 &&	
+		MEG &&	NSI &&	BB0;
 	//	Ue1 &&	Ue2 &&	Ue3 && 
 	//	Um1 &&	Um2 &&	Um3 && 
 	//	Ut1 &&	Ut2 &&	Ut3 ;
@@ -144,30 +169,31 @@ int main(int argc, char** argv)
 	}
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
-	unsigned int nD = 8;
+	const unsigned int nD = 8;
+	int Dim;
 	TTree *tEigen = new TTree("Eigen", "eigen");
 
-	int N, D, U, M;
+	int N, D, U, M = 0;
 	double MM[nD], VE[nD], VM[nD], VT[nD];
 
-	tEigen->Branch("nD", &nD, "fnD/i");
+	tEigen->Branch("Dim", &Dim, "iDim/I");
 
-	tEigen->Branch("N", N, "fN/I");
-	tEigen->Branch("D", D, "fD/I");
-	tEigen->Branch("U", U, "fU/I");
-	tEigen->Branch("M", M, "fM/I");
+	tEigen->Branch("N", &N, "fN/I");
+	tEigen->Branch("D", &D, "fD/I");
+	tEigen->Branch("U", &U, "fU/I");
+	tEigen->Branch("M", &M, "fM/I");
 	
-	tEigen->Branch("MM", MM, "fMM[nD]/D");
+	tEigen->Branch("MM", MM, "fMM[iDim]/D");
 
-	tEigen->Branch("VE", VE, "fVE[nD]/D");
-	tEigen->Branch("VM", VM, "fVM[nD]/D");
-	tEigen->Branch("VT", VT, "fVT[nD]/D");
+	tEigen->Branch("VE", VE, "fVE[iDim]/D");
+	tEigen->Branch("VM", VM, "fVM[iDim]/D");
+	tEigen->Branch("VT", VT, "fVT[iDim]/D");
 
 	std::mt19937 MT(Seed);
 	
 	std::uniform_int_distribution<int> nPow( 7, 15);
-	std::uniform_int_distribution<int> dPow( 3, 11);
-	std::uniform_int_distribution<int> uPow( 4, 10);
+	std::uniform_int_distribution<int> dPow( 3, 10);
+	std::uniform_int_distribution<int> uPow( 4,  9);
 	std::uniform_int_distribution<int> mPow(-3,  3);
 
 	std::uniform_real_distribution<double> Val(0, 1);
@@ -181,6 +207,8 @@ int main(int argc, char** argv)
 	unsigned int nIter = 0;
 	while (nIter < nMAX)
 	{
+		Dim = nD;
+
 		N = nPow(MT);
 		D = dPow(MT);
 		U = uPow(MT);
@@ -188,7 +216,7 @@ int main(int argc, char** argv)
 
 		//naturalness conditions
 		//U < N and (D > N-6 & D < N)
-		if ((U > N) || (N - D < 0) || (N - D > 6))
+		if ((U > N) || (N - D < 3) || (N - D > 6))
 			continue;
 
 		Pol2Cart(n11, N+Val(MT), Phase(MT));
@@ -228,29 +256,18 @@ int main(int argc, char** argv)
 			
 		//V is PMNS matrix
 		Eigen::JacobiSVD<Eigen::MatrixXcd> svd(M, Eigen::ComputeFullV);
-	
+
 		if (Pass(svd))
 		{
 			for (unsigned int i = 0; i < nD; ++i)
 			{
-				MM[i] = std::abs(svd.singularValues()[i]);
-				VE[i] = std::abs(svd.matrixV()(0, nD-i));
-				VM[i] = std::abs(svd.matrixV()(1, nD-i));
-				VT[i] = std::abs(svd.matrixV()(2, nD-i));
+				MM[i] = std::abs(svd.singularValues()[nD-1-i]);
+				VE[i] = std::norm(svd.matrixV()(0, nD-1-i));
+				VM[i] = std::norm(svd.matrixV()(1, nD-1-i));
+				VT[i] = std::norm(svd.matrixV()(2, nD-1-i));
 			}
 
 			tEigen->Fill();
-
-			Out << N << "\t"; 
-			Out << D << "\t"; 
-			Out << U << "\t" ;
-			Out << M << "\t";
-			for (unsigned int i = 0; i < nD; ++i)
-				Out << std::abs(svd.singularValues()[i]) << "\t"; 
-			Out << std::abs(svd.matrixV()(0, nD-4)) << "\t";	//e4
-			Out << std::abs(svd.matrixV()(1, nD-4)) << "\t";	//m4
-			Out << std::abs(svd.matrixV()(2, nD-4)) << "\t";	//t4
-			Out << std::endl;
 		}
 
 		++nIter;
