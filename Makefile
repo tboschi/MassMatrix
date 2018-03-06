@@ -5,11 +5,13 @@ ROOTCXXF = $(shell root-config --cflags)
 LDFLAGS  := -Wl,--no-as-needed $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -Iinclude/
 
-#TGT =	RandomScan
-TGT =	SVD	\
-	GeneratePlot
-#TGT =	Test
-#TGT =	OneGeneration
+TGT =	Delineate	\
+	SVD		\
+	Plotter
+	#GeneratePlot	\
+	RandomScan	\
+	Test		\
+	OneGeneration
 
 all: $(TGT)
 
