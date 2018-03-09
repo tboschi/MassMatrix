@@ -90,8 +90,8 @@ int main(int argc, char** argv)
 	ISS->Clean(Block::Full);
 	ISS->Set(Block::Mr,  4, 12);
 	ISS->Set(Block::Ms,  4, 12);
-	ISS->Set(Block::Ur, -3,  3);
-	ISS->Set(Block::Us, -3,  3);
+	ISS->Set(Block::Ur, -4,  4);
+	ISS->Set(Block::Us, -4,  4);
 
 	ISS->Clean(Block::Mr);
 	ISS->Clean(Block::Ms);
