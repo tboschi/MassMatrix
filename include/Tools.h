@@ -13,6 +13,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <cmath>
+#include <complex>
 #include <map>
 
 //#include "Nucleon.h" 
@@ -117,7 +119,6 @@ namespace Kine
 	
 		return Integral * h/90.0;
 	}	
-}
 */
 
 //Constants
@@ -200,6 +201,13 @@ namespace Const
 
 	static const double fWwidth = 2.085;		//W decay width, in GeV
 	static const double fZwidth = 2.4952;		//W decay width, in GeV
+
+	static const std::complex<double> i(0, 1);
+	inline std::complex<double> Pol2Cart(double lMod, double Phs)
+	{
+		std::complex<double> z(pow(10, lMod)*cos(Phs), pow(10, lMod)*sin(Phs));
+		return z;
+	}
 }
 
 #endif

@@ -209,6 +209,13 @@ int main(int argc, char** argv)
 		Print(CorrectD);
 		std::cout << "_________________________" << std::endl;
 
+		Eigen::MatrixXcd Test(nD, nD);
+		Test << 1;
+		Test << 2;
+		Test << 3;
+		Test << 4;
+		Test << 5;
+
 		/*
 		if (Pass(svd))
 		{
