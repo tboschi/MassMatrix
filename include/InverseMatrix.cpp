@@ -23,6 +23,7 @@ Eigen::MatrixXcd InverseMatrix::MassMatrix()
 	return MM;
 }
 
+//Print blocks
 void InverseMatrix::Show(Block BN)
 {
 	switch (BN)
@@ -345,6 +346,7 @@ Eigen::MatrixXcd InverseMatrix::ColumnBlockSVD(std::vector<double> &SingularValu
 	return UU;
 }
 
+//SVD decomposition of the full mass matrix
 Eigen::MatrixXcd InverseMatrix::MassMatrixSVD(std::vector<double> &SingularValues)
 {
 	SingularValues.clear();
@@ -367,11 +369,13 @@ Eigen::MatrixXcd InverseMatrix::MassMatrixSVD(std::vector<double> &SingularValue
 	return MassSVD.matrixV() * Projector * Majorana;
 }
 
+//number of right-handed neutrinos
 unsigned int InverseMatrix::nR()
 {
 	return inR;
 }
 
+//number of sterile fermions
 unsigned int InverseMatrix::nS()
 {
 	return inS;
@@ -382,6 +386,7 @@ unsigned int InverseMatrix::nM()
 	return 3+inR+inS;
 }
 
+//number of non-zero SVD for the leading order matrix
 unsigned int InverseMatrix::n0()
 {
 	return nR() < 3 ? nR() : std::min(nR(), nS());
@@ -405,6 +410,7 @@ bool InverseMatrix::FindDeltaM2(std::vector<double> &vMass, bool &Hierarchy)
 	return (N21 && N31) || (I21 && I32);
 }
 
+//returns true if there is a mass state in the range Min-Max
 bool InverseMatrix::FindMass(std::vector<double> &vMass, double Min, double Max)
 {
 	bool M4 = false; 
@@ -415,6 +421,7 @@ bool InverseMatrix::FindMass(std::vector<double> &vMass, double Min, double Max)
 	return M4;
 }
 
+//return true if satisfies GERDA
 bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
 	double p2 = -pow(125e6, 2);
@@ -426,6 +433,7 @@ bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 	bool BB0 = std::abs(BBeff) < 20e-3;	//future
 }
 
+//return true if satisfies MEG
 bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
 	std::complex<double>  MEGamp;
@@ -438,6 +446,7 @@ bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 	bool MEG = MEGbranch < 5e-14;		//future
 }
 
+//return true if satisfies unitarity by NSI constraints
 bool InverseMatrix::NSI(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
 	Eigen::Matrix3d NSIabove, NSIbelow;
