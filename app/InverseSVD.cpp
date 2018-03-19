@@ -88,8 +88,8 @@ int main(int argc, char** argv)
 	TH2I * hMatrix = new TH2I("matrix", "matrix", Dim, 0, Dim, Dim, 0, Dim);
 
 	ISS->Clean(Block::Full);
-	ISS->Set(Block::Mr,  4, 12);
-	ISS->Set(Block::Ms,  4, 12);
+	ISS->Set(Block::Mr,  4, 15);
+	ISS->Set(Block::Ms,  4, 15);
 	ISS->Set(Block::Ur, -4,  4);
 	ISS->Set(Block::Us, -4,  4);
 
@@ -107,16 +107,21 @@ int main(int argc, char** argv)
 		vMag = ISS->Populate(Block::Full);
 
 		Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vVal);
-		for (unsigned int i = 0; i < Dim; ++i)
-		{
-			MM[i] = vVal.at(i);
-			VE[i] = std::abs(VV(0, i));
-			VM[i] = std::abs(VV(0, i));
-			VT[i] = std::abs(VV(0, i));
-		}
-
 		if (ISS->FindDeltaM2(vVal, NI))
+		{
+			for (unsigned int i = 0; i < vMag.size(); ++i)
+				Mag[i] = vMag.at(i);
+
+			for (unsigned int i = 0; i < Dim; ++i)
+			{
+				MM[i] = vVal.at(i);
+				VE[i] = std::abs(VV(0, i));
+				VM[i] = std::abs(VV(0, i));
+				VT[i] = std::abs(VV(0, i));
+			}
+
 			tEigen->Fill();
+		}
 
 		if (i % Cap == Cap-1)
 		{
