@@ -428,7 +428,6 @@ bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 
 bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
-	double p2 = -pow(125e6, 2);
 	std::complex<double>  MEGamp;
 	for (unsigned int i = 0; i < nM(); ++i)
 		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vMass.at(i) / pow(Const::fMW, 2) );
