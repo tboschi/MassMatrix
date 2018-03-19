@@ -125,8 +125,8 @@ int main(int argc, char** argv)
 				{
 					MM[i] = vVal.at(i);
 					VE[i] = std::abs(VV(0, i));
-					VM[i] = std::abs(VV(0, i));
-					VT[i] = std::abs(VV(0, i));
+					VM[i] = std::abs(VV(1, i));
+					VT[i] = std::abs(VV(2, i));
 				}
 	
 				tEigen->Fill();
