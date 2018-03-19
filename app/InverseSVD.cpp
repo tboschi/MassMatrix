@@ -73,13 +73,16 @@ int main(int argc, char** argv)
 	unsigned int Var = 3 * nR + (nR + nS) * (nR + nS + 1);
 	int Mag[Var];
 	double MM[Dim], VE[Dim], VM[Dim], VT[Dim];
-	bool NI;
+	bool NH, BB0, MEG, NSI;
 
 	TTree *tEigen = new TTree("Eigen", "eigen");
 
 	tEigen->Branch("Dim", &Dim, "iDim/I");
 	tEigen->Branch("Var", &Var, "iVar/I");
-	tEigen->Branch("NI",  &NI,  "bNI/O");
+	tEigen->Branch("NH",  &NH,  "bNH/O");
+	tEigen->Branch("BB0", &BB0, "bBB0/O");
+	tEigen->Branch("MEG", &MEG, "bMEG/O");
+	tEigen->Branch("NSI", &NSI, "bNSI/O");
 	tEigen->Branch("Mag", Mag,  "fMag[iVar]/I");
 	tEigen->Branch("MM",  MM,   "fMM[iDim]/D");
 	tEigen->Branch("VE",  VE,   "fVE[iDim]/D");
@@ -107,20 +110,27 @@ int main(int argc, char** argv)
 		vMag = ISS->Populate(Block::Full);
 
 		Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vVal);
-		if (ISS->FindDeltaM2(vVal, NI))
+		if (ISS->FindDeltaM2(vVal, NH))
 		{
-			for (unsigned int i = 0; i < vMag.size(); ++i)
-				Mag[i] = vMag.at(i);
-
-			for (unsigned int i = 0; i < Dim; ++i)
+			if (ISS->FindMass(vVal, 1e6, 2e9))
 			{
-				MM[i] = vVal.at(i);
-				VE[i] = std::abs(VV(0, i));
-				VM[i] = std::abs(VV(0, i));
-				VT[i] = std::abs(VV(0, i));
-			}
+				BB0 = ISS->BB0(vVal, VV);
+				MEG = ISS->MEG(vVal, VV);
+				NSI = ISS->NSI(vVal, VV);
 
-			tEigen->Fill();
+				for (unsigned int i = 0; i < vMag.size(); ++i)
+					Mag[i] = vMag.at(i);
+	
+				for (unsigned int i = 0; i < Dim; ++i)
+				{
+					MM[i] = vVal.at(i);
+					VE[i] = std::abs(VV(0, i));
+					VM[i] = std::abs(VV(0, i));
+					VT[i] = std::abs(VV(0, i));
+				}
+	
+				tEigen->Fill();
+			}
 		}
 
 		if (i % Cap == Cap-1)

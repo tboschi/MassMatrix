@@ -202,11 +202,20 @@ namespace Const
 	static const double fWwidth = 2.085;		//W decay width, in GeV
 	static const double fZwidth = 2.4952;		//W decay width, in GeV
 
+	static const double fEWScale = 249;		//EWSB scale in GeV
+
 	static const std::complex<double> i(0, 1);
 	inline std::complex<double> Pol2Cart(double lMod, double Phs)
 	{
 		std::complex<double> z(pow(10, lMod)*cos(Phs), pow(10, lMod)*sin(Phs));
 		return z;
+	}
+
+
+	inline double LoopG(double x)
+	{
+		return - 0.25 * (2*x*x*x + 5*x*x - x) / pow((1-x), 3) -
+		       - 1.50 * (x*x*x) / pow(1-x, 4) * log(x);
 	}
 }
 

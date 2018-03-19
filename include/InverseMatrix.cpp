@@ -414,3 +414,61 @@ bool InverseMatrix::FindMass(std::vector<double> &vMass, double Min, double Max)
 
 	return M4;
 }
+
+bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+{
+	double p2 = -pow(125e6, 2);
+	std::complex<double> BBeff;
+	for (unsigned int i = 0; i < nM(); ++i)
+		BBeff += VA(0, i) * VA(0, i) * p2 * vMass.at(i) / (p2 - vMass.at(i));
+
+	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
+	bool BB0 = std::abs(BBeff) < 20e-3;	//future
+}
+
+bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+{
+	double p2 = -pow(125e6, 2);
+	std::complex<double>  MEGamp;
+	for (unsigned int i = 0; i < nM(); ++i)
+		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vMass.at(i) / pow(Const::fMW, 2) );
+
+	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
+
+	//bool MEG = MEGbranch < 4.2e-13;		//present
+	bool MEG = MEGbranch < 5e-14;		//future
+}
+
+bool InverseMatrix::NSI(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+{
+	Eigen::Matrix3d NSIabove, NSIbelow;
+	Eigen::Matrix3cd Kab;
+
+	NSIabove <<	4.0e-3,	1.2e-4,	3.2e-3,
+			1.2e-4,	1.6e-3,	2.1e-3,
+			3.2e-3,	2.1e-3,	5.3e-3;
+	NSIbelow <<	4.0e-3,	1.8e-3,	3.2e-3,
+		 	1.8e-3,	1.6e-3,	2.1e-3,
+			3.2e-3,	2.1e-3,	5.3e-3;
+
+	bool EW = true;
+	for (unsigned int i = 4; i < nM(); ++i)
+	{
+		EW *= vMass.at(i)*1e-9 > Const::fEWScale;
+
+		Kab(0,0) += VA(0, i) * std::conj(VA(0, i));
+		Kab(0,1) += VA(0, i) * std::conj(VA(1, i));
+		Kab(0,2) += VA(0, i) * std::conj(VA(2, i));
+		Kab(1,0) += VA(1, i) * std::conj(VA(0, i));
+		Kab(1,1) += VA(1, i) * std::conj(VA(1, i));
+		Kab(1,2) += VA(1, i) * std::conj(VA(2, i));
+		Kab(2,0) += VA(2, i) * std::conj(VA(0, i));
+		Kab(2,1) += VA(2, i) * std::conj(VA(1, i));
+		Kab(2,2) += VA(2, i) * std::conj(VA(2, i));
+	}
+
+	bool NSI = true;
+	for (unsigned int c = 0; c < Kab.cols(); ++c)
+		for (unsigned int r = 0; r < Kab.rows(); ++r)
+			NSI *= EW ? Kab.cwiseAbs()(r, c) < NSIabove(r, c) : Kab.cwiseAbs()(r, c) < NSIbelow(r, c);
+}
