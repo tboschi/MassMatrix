@@ -431,6 +431,8 @@ bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 
 	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
 	bool BB0 = std::abs(BBeff) < 20e-3;	//future
+
+	return BB0;
 }
 
 //return true if satisfies MEG
@@ -444,6 +446,8 @@ bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 
 	//bool MEG = MEGbranch < 4.2e-13;		//present
 	bool MEG = MEGbranch < 5e-14;		//future
+
+	return MEG;
 }
 
 //return true if satisfies unitarity by NSI constraints
@@ -479,4 +483,6 @@ bool InverseMatrix::NSI(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 	for (unsigned int c = 0; c < Kab.cols(); ++c)
 		for (unsigned int r = 0; r < Kab.rows(); ++r)
 			NSI *= EW ? Kab.cwiseAbs()(r, c) < NSIabove(r, c) : Kab.cwiseAbs()(r, c) < NSIbelow(r, c);
+
+	return NSI;
 }
