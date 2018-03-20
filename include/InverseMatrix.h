@@ -51,6 +51,9 @@ class InverseMatrix
 		std::vector<int> PerColAll(Eigen::Ref<Eigen::MatrixXcd> mBlock, std::uniform_int_distribution<int> &Pow);
 		std::vector<int> PopulateAll(Eigen::Ref<Eigen::MatrixXcd> mBlock, std::uniform_int_distribution<int> &Pow, bool Fixed = false);
 		std::vector<int> PopulateSup(Eigen::Ref<Eigen::MatrixXcd> mBlock, std::uniform_int_distribution<int> &Pow, bool Fixed = false);
+		std::vector<int> PopulateReduceMr(std::uniform_int_distribution<int> &Pow, bool Fixed = false);
+		std::vector<int> PopulateReduceMs(std::uniform_int_distribution<int> &Pow, bool Fixed = false);
+		std::vector<int> PopulateReduceUs(std::uniform_int_distribution<int> &Pow, bool Fixed = false);
 
 		Eigen::MatrixXcd Get(Block BN);
 		Eigen::MatrixXcd ColumnBlock();	
@@ -70,6 +73,7 @@ class InverseMatrix
 
 	private:
 		unsigned int inR, inS;
+		bool ReduceParameters;
 	
 		std::mt19937 MT;
 

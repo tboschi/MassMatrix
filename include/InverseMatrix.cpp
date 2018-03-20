@@ -11,6 +11,18 @@ InverseMatrix::InverseMatrix(unsigned int nR_, unsigned int nS_) :
 	Block_Ms.resize(inR, inS);
 	Block_Ur.resize(inR, inR);
 	Block_Us.resize(inS, inS);
+
+	if ( nS()-nR() == pow(nS()-nR(), 2))
+		ReduceParameters = true;
+	else
+		ReduceParameters = false;
+
+	//if ReduceParameters is true then some dof can be removed easily
+	//it will speed up computation
+	//Mr can have 3 entries which are real
+	//Ms is diagonal and real -> great for fixing LO mass states
+	//Ur does not change, but it is useless anyway
+	//Us has a real diagonal
 }
 
 Eigen::MatrixXcd InverseMatrix::MassMatrix()
@@ -116,26 +128,35 @@ std::vector<int> InverseMatrix::Populate(Block BN, bool Fixed)
 	switch (BN)
 	{
 		case Block::Full:
-			vMr = PopulateAll(Block_Mr, Pow_Mr, Fixed);
-			vMs = PopulateAll(Block_Ms, Pow_Ms, Fixed);
-			vUr = PopulateSup(Block_Ur, Pow_Ur, Fixed);
-			vUs = PopulateSup(Block_Us, Pow_Us, Fixed);
+			vMr = Populate(Block::Mr, Fixed);
+			vMs = Populate(Block::Ms, Fixed);
+			vUr = Populate(Block::Ur, Fixed);
+			vUs = Populate(Block::Us, Fixed);
 			vRet.insert(vRet.end(), vMr.begin(), vMr.end());
 			vRet.insert(vRet.end(), vMs.begin(), vMs.end());
 			vRet.insert(vRet.end(), vUr.begin(), vUr.end());
 			vRet.insert(vRet.end(), vUs.begin(), vUs.end());
 			break;
 		case Block::Mr:
-			vRet = PopulateAll(Block_Mr, Pow_Mr, Fixed);
+			if (ReduceParameters)
+				vRet = PopulateReduceMr(Pow_Mr, Fixed);
+			else 
+				vRet = PopulateAll(Block_Mr, Pow_Mr, Fixed);
 			break;
 		case Block::Ms:
-			vRet = PopulateAll(Block_Ms, Pow_Ms, Fixed);
+			if (ReduceParameters)
+				vRet = PopulateReduceMs(Pow_Mr, Fixed);
+			else
+				vRet = PopulateAll(Block_Ms, Pow_Ms, Fixed);
 			break;
 		case Block::Ur:
 			vRet = PopulateAll(Block_Ur, Pow_Ur, Fixed);
 			break;
 		case Block::Us:
-			vRet = PopulateAll(Block_Us, Pow_Us, Fixed);
+			if (ReduceParameters)
+				vRet = PopulateReduceUs(Pow_Mr, Fixed);
+			else
+				vRet = PopulateAll(Block_Us, Pow_Us, Fixed);
 			break;
 		default:
 			std::cerr << "Wrong block" << std::endl;
@@ -299,6 +320,75 @@ std::vector<int> InverseMatrix::PopulateSup(Eigen::Ref<Eigen::MatrixXcd> mBlock,
 	return vRet;
 }
 
+//Populates all entries of blocks Mr, Ms, Us if in ReducedParameters mode, will speed uyp things
+//Mr : the first column is set to be real (j == 0 has no phase)
+std::vector<int> InverseMatrix::PopulateReduceMr(std::uniform_int_distribution<int> &Pow, bool Fixed)
+{
+	std::vector<int> vRet;
+	int GlobMod;
+	if (Fixed)
+		GlobMod = Pow(MT);
+
+	for (unsigned int j = 0; j < Block_Mr.cols(); ++j)
+	{
+		for (unsigned int i = 0; i < Block_Mr.rows(); ++i)
+		{
+			if (!Fixed)
+				GlobMod = Pow(MT);
+			vRet.push_back(GlobMod);
+
+			Block_Mr(i,j) = Const::Pol2Cart(GlobMod + Valor(MT), j == 0 ? 0 : Phase(MT));
+		}
+	}
+
+	return vRet;
+}
+
+//Ms : is set to be diagonal and real
+std::vector<int> InverseMatrix::PopulateReduceMs(std::uniform_int_distribution<int> &Pow, bool Fixed)
+{
+	std::vector<int> vRet;
+	int GlobMod;
+	if (Fixed)
+		GlobMod = Pow(MT);
+
+	for (unsigned int i = 0; i < Block_Ms.rows(); ++i)
+	{
+		if (!Fixed)
+			GlobMod = Pow(MT);
+		vRet.push_back(GlobMod);
+
+		Block_Ms(i,i) = Const::Pol2Cart(GlobMod + Valor(MT), 0);
+	}
+
+	return vRet;
+}
+
+//Us : is set to have a real diagonal
+std::vector<int> InverseMatrix::PopulateReduceUs(std::uniform_int_distribution<int> &Pow, bool Fixed)
+{
+	std::vector<int> vRet;
+	int GlobMod;
+	if (Fixed)
+		GlobMod = Pow(MT);
+
+	for (unsigned int j = 0; j < Block_Us.cols(); ++j)
+	{
+		for (unsigned int i = 0; i < j+1; ++i)
+		{
+			if (!Fixed)
+				GlobMod = Pow(MT);
+			vRet.push_back(GlobMod);
+
+			Block_Us(i, j) = Const::Pol2Cart(GlobMod + Valor(MT), i == j ? 0 : Phase(MT));
+			if (j > i)
+				Block_Us(j, i) = Block_Us(i, j);
+		}
+	}
+
+	return vRet;
+}
+
 //Return a block
 Eigen::MatrixXcd InverseMatrix::Get(Block BN)
 {
@@ -440,7 +530,7 @@ bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
 	std::complex<double>  MEGamp;
 	for (unsigned int i = 0; i < nM(); ++i)
-		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vMass.at(i) / pow(Const::fMW, 2) );
+		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vMass.at(i)*vMass.at(i) / pow(Const::fMW, 2) );
 
 	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
 
@@ -453,36 +543,22 @@ bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 //return true if satisfies unitarity by NSI constraints
 bool InverseMatrix::NSI(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 {
-	Eigen::Matrix3d NSIabove, NSIbelow;
+	Eigen::Matrix3d Unit;
 	Eigen::Matrix3cd Kab;
 
-	NSIabove <<	4.0e-3,	1.2e-4,	3.2e-3,
-			1.2e-4,	1.6e-3,	2.1e-3,
-			3.2e-3,	2.1e-3,	5.3e-3;
-	NSIbelow <<	4.0e-3,	1.8e-3,	3.2e-3,
-		 	1.8e-3,	1.6e-3,	2.1e-3,
-			3.2e-3,	2.1e-3,	5.3e-3;
+	Unit <<	4.0e-3,	1.2e-4,	3.2e-3,
+		1.2e-4,	1.6e-3,	2.1e-3,
+		3.2e-3,	2.1e-3,	5.3e-3;
 
-	bool EW = true;
 	for (unsigned int i = 4; i < nM(); ++i)
-	{
-		EW *= vMass.at(i)*1e-9 > Const::fEWScale;
-
-		Kab(0,0) += VA(0, i) * std::conj(VA(0, i));
-		Kab(0,1) += VA(0, i) * std::conj(VA(1, i));
-		Kab(0,2) += VA(0, i) * std::conj(VA(2, i));
-		Kab(1,0) += VA(1, i) * std::conj(VA(0, i));
-		Kab(1,1) += VA(1, i) * std::conj(VA(1, i));
-		Kab(1,2) += VA(1, i) * std::conj(VA(2, i));
-		Kab(2,0) += VA(2, i) * std::conj(VA(0, i));
-		Kab(2,1) += VA(2, i) * std::conj(VA(1, i));
-		Kab(2,2) += VA(2, i) * std::conj(VA(2, i));
-	}
+		for (unsigned int c = 0; c < Kab.cols(); ++c)
+			for (unsigned int r = 0; r < c+1; ++r)
+				Kab(r, c) += VA(r, i) * std::conj(VA(c, i));
 
 	bool NSI = true;
 	for (unsigned int c = 0; c < Kab.cols(); ++c)
-		for (unsigned int r = 0; r < Kab.rows(); ++r)
-			NSI *= EW ? Kab.cwiseAbs()(r, c) < NSIabove(r, c) : Kab.cwiseAbs()(r, c) < NSIbelow(r, c);
+		for (unsigned int r = 0; r < c+1; ++r)
+			NSI *= Kab.cwiseAbs()(r, c) < Unit(r, c);
 
 	return NSI;
 }

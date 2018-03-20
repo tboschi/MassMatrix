@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
 	InverseMatrix *ISS = new InverseMatrix(nR, nS);
-	
+
 	unsigned int Cap = 1000000;
 	unsigned int Dim = ISS->nM();
 	unsigned int Var = 3 * nR + (nR + nS) * (nR + nS + 1);
@@ -89,13 +89,16 @@ int main(int argc, char** argv)
 	tEigen->Branch("VE",  VE,   "fVE[iDim]/D");
 	tEigen->Branch("VM",  VM,   "fVM[iDim]/D");
 	tEigen->Branch("VT",  VT,   "fVT[iDim]/D");
-	TH2I * hMatrix = new TH2I("matrix", "matrix", Dim, 0, Dim, Dim, 0, Dim);
 
+	std::cout << "Realisation ISS(" << ISS->nR() << "," << ISS->nS() << ")" << std::endl;
+	std::cout << "Saving to file every " << Cap << " entries" << std::endl;
+	std::cout << "Total number of savings expected is " << nMAX/Cap+1 << std::endl;
+	
 	ISS->Clean(Block::Full);
-	ISS->Set(Block::Mr,  4, 15);
-	ISS->Set(Block::Ms,  4, 15);
-	ISS->Set(Block::Ur, -4,  4);
-	ISS->Set(Block::Us, -4,  4);
+	ISS->Set(Block::Mr,  4,  6);
+	ISS->Set(Block::Ms,  6, 15);
+	ISS->Set(Block::Ur, -5,  4);
+	ISS->Set(Block::Us, -5,  4);
 
 	ISS->Clean(Block::Mr);
 	ISS->Clean(Block::Ms);
@@ -150,7 +153,7 @@ int main(int argc, char** argv)
 					FillHistogram(hMatrix, vMag, k, ix, iy, Dim);
 			*/
 
-			std::cout << "Saving " << i << std::endl;
+			std::cout << "Saving " << i/Cap << std::endl;
 			tEigen->Write();
 
 			//std::stringstream ssl;
