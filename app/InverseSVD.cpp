@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
 	std::cout << "Realisation ISS(" << ISS->nR() << "," << ISS->nS() << ")" << std::endl;
 	std::cout << "Saving to file every " << Cap << " entries" << std::endl;
-	std::cout << "Total number of savings expected is " << nMAX/Cap+1 << std::endl;
+	std::cout << "Total number of savings expected is " << nMAX/Cap << std::endl;
 	
 	ISS->Clean(Block::Full);
 	ISS->Set(Block::Mr,  4,  6);
@@ -134,6 +134,7 @@ int main(int argc, char** argv)
 				VT[i] = std::abs(VV(2, i));
 			}
 
+			std::cout << "Filling " << tEigen->GetEntries() << std::endl;
 			tEigen->Fill();
 		}
 
