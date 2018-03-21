@@ -134,7 +134,7 @@ int main(int argc, char** argv)
 				VT[i] = std::abs(VV(2, i));
 			}
 
-			std::cout << "Filling " << tEigen->GetEntries() << std::endl;
+			std::cout << "Filling " << i << " at " <<  tEigen->GetEntries() << std::endl;
 			tEigen->Fill();
 		}
 

@@ -499,13 +499,13 @@ unsigned int InverseMatrix::n0()
 
 //return true if the Dm2 from nufit oscillation data is found
 //Hierarchy is true if is normal ordering, false if inverted
-bool InverseMatrix::FindDeltaM2(std::vector<double> &vMass, bool &Hierarchy)
+bool InverseMatrix::FindDeltaM2(std::vector<double> &vM, bool &Hierarchy)
 {
-	bool N21 = (vMass.at(1)-vMass.at(0) > 6.8e-5	&& vMass.at(1)-vMass.at(0) < 8.02e-5);
-	bool N31 = (vMass.at(2)-vMass.at(0) > 2.399e-3	&& vMass.at(2)-vMass.at(0) < 2.593e-3);
+	bool N21 = (vM.at(1)*vM.at(1)-vM.at(0)*vM.at(0) > 6.8e-5	&& vM.at(1)*vM.at(1)-vM.at(0)*vM.at(0) < 8.02e-5);
+	bool N31 = (vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) > 2.399e-3	&& vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) < 2.593e-3);
 
-	bool I21 = (vMass.at(2)-vMass.at(1) > 6.8e-5	&& vMass.at(2)-vMass.at(1) < 8.02e-5);
-	bool I32 = (vMass.at(2)-vMass.at(0) > 2.369e-3	&& vMass.at(2)-vMass.at(0) < 2.562e-3);
+	bool I21 = (vM.at(2)*vM.at(2)-vM.at(1)*vM.at(1) > 6.8e-5	&& vM.at(2)*vM.at(2)-vM.at(1)*vM.at(1) < 8.02e-5);
+	bool I32 = (vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) > 2.369e-3	&& vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) < 2.562e-3);
 
 	if (N21 && N31)
 		Hierarchy = true;
@@ -516,10 +516,10 @@ bool InverseMatrix::FindDeltaM2(std::vector<double> &vMass, bool &Hierarchy)
 }
 
 //returns true if there is a mass state in the range Min-Max
-bool InverseMatrix::FindMass(std::vector<double> &vMass, double Min, double Max)
+bool InverseMatrix::FindMass(std::vector<double> &vM, double Min, double Max)
 {
 	bool M4 = false; 
-	for (auto p : vMass)
+	for (auto p : vM)
 		if (!M4 && p > Min && p < Max)
 			M4 = true;
 
@@ -527,12 +527,12 @@ bool InverseMatrix::FindMass(std::vector<double> &vMass, double Min, double Max)
 }
 
 //return true if satisfies GERDA
-bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
 	double p2 = -pow(125e6, 2);
 	std::complex<double> BBeff;
 	for (unsigned int i = 0; i < nM(); ++i)
-		BBeff += VA(0, i) * VA(0, i) * p2 * vMass.at(i) / (p2 - vMass.at(i));
+		BBeff += VA(0, i) * VA(0, i) * p2 * vM.at(i) / (p2 - vM.at(i));
 
 	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
 	bool BB0 = std::abs(BBeff) < 20e-3;	//future
@@ -541,11 +541,11 @@ bool InverseMatrix::BB0(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 }
 
 //return true if satisfies MEG
-bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
 	std::complex<double>  MEGamp;
 	for (unsigned int i = 0; i < nM(); ++i)
-		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vMass.at(i)*vMass.at(i) / pow(Const::fMW, 2) );
+		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vM.at(i)*vM.at(i) / pow(Const::fMW, 2) );
 
 	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
 
@@ -556,7 +556,7 @@ bool InverseMatrix::MEG(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
 }
 
 //return true if satisfies unitarity by NSI constraints
-bool InverseMatrix::NSI(std::vector<double> &vMass, Eigen::MatrixXcd &VA)
+bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
 	Eigen::Matrix3d Unit;
 	Eigen::Matrix3cd Kab;
