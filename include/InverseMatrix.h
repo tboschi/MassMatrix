@@ -37,7 +37,7 @@ class InverseMatrix
 	public:
 		InverseMatrix(unsigned int inR, unsigned int inS);
 		Eigen::MatrixXcd MassMatrix();
-		void Show(Block BN);
+		void Show(Block BN, bool Abs = false);
 		void Set(Block BN, int min, int max);
 		void Clean(Block BN);
 

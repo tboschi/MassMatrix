@@ -113,6 +113,8 @@ int main(int argc, char** argv)
 		ISS->Clean(Block::Full);
 		vMag = ISS->Populate(Block::Full);
 
+		//ISS->Show(Block::Full, 0);
+
 		Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vVal);
 		if (ISS->FindDeltaM2(vVal, NH))
 		{

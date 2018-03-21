@@ -12,7 +12,7 @@ InverseMatrix::InverseMatrix(unsigned int nR_, unsigned int nS_) :
 	Block_Ur.resize(inR, inR);
 	Block_Us.resize(inS, inS);
 
-	if ( nS()-nR() == pow(nS()-nR(), 2))
+	if ( nS()-nR() == pow(nS()-nR(), 2) )
 		ReduceParameters = true;
 	else
 		ReduceParameters = false;
@@ -36,24 +36,39 @@ Eigen::MatrixXcd InverseMatrix::MassMatrix()
 }
 
 //Print blocks
-void InverseMatrix::Show(Block BN)
+void InverseMatrix::Show(Block BN, bool Abs)
 {
 	switch (BN)
 	{
 		case Block::Full:
-			std::cout << std::endl << MassMatrix() << std::endl << std::endl; 
+			if (Abs)
+				std::cout << std::endl << MassMatrix().cwiseAbs() << std::endl << std::endl; 
+			else
+				std::cout << std::endl << MassMatrix() << std::endl << std::endl; 
 			break;
 		case Block::Mr:
-			std::cout << std::endl << Block_Mr << std::endl << std::endl; 
+			if (Abs)
+				std::cout << std::endl << Block_Mr.cwiseAbs() << std::endl << std::endl; 
+			else
+				std::cout << std::endl << Block_Mr << std::endl << std::endl; 
 			break;
 		case Block::Ms:
-			std::cout << std::endl << Block_Ms << std::endl << std::endl; 
+			if (Abs)
+				std::cout << std::endl << Block_Ms.cwiseAbs() << std::endl << std::endl; 
+			else
+				std::cout << std::endl << Block_Ms << std::endl << std::endl; 
 			break;
 		case Block::Ur:
-			std::cout << std::endl << Block_Ur << std::endl << std::endl; 
+			if (Abs)
+				std::cout << std::endl << Block_Ur.cwiseAbs() << std::endl << std::endl; 
+			else
+				std::cout << std::endl << Block_Ur << std::endl << std::endl; 
 			break;
 		case Block::Us:
-			std::cout << std::endl << Block_Us << std::endl << std::endl; 
+			if (Abs)
+				std::cout << std::endl << Block_Us.cwiseAbs() << std::endl << std::endl; 
+			else
+				std::cout << std::endl << Block_Us << std::endl << std::endl; 
 			break;
 		default:
 			std::cerr << "Wrong block" << std::endl;
@@ -145,7 +160,7 @@ std::vector<int> InverseMatrix::Populate(Block BN, bool Fixed)
 			break;
 		case Block::Ms:
 			if (ReduceParameters)
-				vRet = PopulateReduceMs(Pow_Mr, Fixed);
+				vRet = PopulateReduceMs(Pow_Ms, Fixed);
 			else
 				vRet = PopulateAll(Block_Ms, Pow_Ms, Fixed);
 			break;
@@ -154,7 +169,7 @@ std::vector<int> InverseMatrix::Populate(Block BN, bool Fixed)
 			break;
 		case Block::Us:
 			if (ReduceParameters)
-				vRet = PopulateReduceUs(Pow_Mr, Fixed);
+				vRet = PopulateReduceUs(Pow_Us, Fixed);
 			else
 				vRet = PopulateAll(Block_Us, Pow_Us, Fixed);
 			break;
