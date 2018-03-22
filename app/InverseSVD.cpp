@@ -95,10 +95,15 @@ int main(int argc, char** argv)
 	std::cout << "Total number of savings expected is " << nMAX/Cap << std::endl;
 	
 	ISS->Clean(Block::Full);
-	ISS->Set(Block::Mr,  4,  6);
-	ISS->Set(Block::Ms,  6, 15);
-	ISS->Set(Block::Ur, -5,  4);
-	ISS->Set(Block::Us, -5,  4);
+	//ISS->Set(Block::Mr,  4,  6);
+	//ISS->Set(Block::Ms,  6, 12);
+	//ISS->Set(Block::Ur, -2,  4);
+	//ISS->Set(Block::Us, -2,  4);
+
+	ISS->Set(Block::Mr, 4, 6);
+	ISS->Set(Block::Ms, 6, 12);
+	ISS->Set(Block::Ur, -4, 3);
+	ISS->Set(Block::Us, -4, 3);
 
 	ISS->Clean(Block::Mr);
 	ISS->Clean(Block::Ms);
@@ -113,9 +118,13 @@ int main(int argc, char** argv)
 		ISS->Clean(Block::Full);
 		vMag = ISS->Populate(Block::Full);
 
+		//ISS->Clean(Block::Ur);
+		//ISS->Clean(Block::Us);
 		//ISS->Show(Block::Full, 0);
 
 		Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vVal);
+
+
 		if (ISS->FindDeltaM2(vVal, NH))
 		{
 			EXP = ISS->FindMass(vVal, 1e6, 2e9);

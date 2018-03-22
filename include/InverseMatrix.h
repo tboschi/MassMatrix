@@ -12,6 +12,7 @@
 #define INVERSEMATRIX_H
 
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <string>
 #include <random>
@@ -38,6 +39,7 @@ class InverseMatrix
 		InverseMatrix(unsigned int inR, unsigned int inS);
 		Eigen::MatrixXcd MassMatrix();
 		void Show(Block BN, bool Abs = false);
+		void Print(const Eigen::MatrixXcd &S);
 		void Set(Block BN, int min, int max);
 		void Clean(Block BN);
 

@@ -208,12 +208,15 @@ namespace Const
 	inline std::complex<double> Pol2Cart(double lMod, double Phs)
 	{
 		std::complex<double> z(pow(10, lMod)*cos(Phs), pow(10, lMod)*sin(Phs));
+		//std::complex<double> z(pow(10, lMod)*cos(0), pow(10, lMod)*sin(0));
 		return z;
 	}
 
 
+	//x is the mass ratio, so to be squared
 	inline double LoopG(double x)
 	{
+		x *= x;
 		return - 0.25 * (2*x*x*x + 5*x*x - x) / pow((1-x), 3) -
 		       - 1.50 * (x*x*x) / pow(1-x, 4) * log(x);
 	}

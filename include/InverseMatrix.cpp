@@ -31,6 +31,9 @@ Eigen::MatrixXcd InverseMatrix::MassMatrix()
 	MM << Eigen::MatrixXcd::Zero(3,3),	Block_Mr,		Eigen::MatrixXcd::Zero(3,nS()),
 	      Block_Mr.transpose(),		Block_Ur,		Block_Ms,
 	      Eigen::MatrixXcd::Zero(nS(),3),	Block_Ms.transpose(),	Block_Us;
+	//MM << Eigen::MatrixXcd::Zero(3,3),	Block_Mr,		Block_Mr,
+	//      Block_Mr.transpose(),		Block_Ur,		Block_Ms,
+	//      Block_Mr.transpose(),	Block_Ms.transpose(),	Block_Us;
 
 	return MM;
 }
@@ -75,6 +78,19 @@ void InverseMatrix::Show(Block BN, bool Abs)
 			break;
 	}
 }
+
+void InverseMatrix::Print(const Eigen::MatrixXcd &S)
+{
+	std::cout << std::fixed << std::setprecision(5);
+	for (unsigned int i = 0; i < S.rows(); ++i)
+	{
+		for (unsigned int j = 0; j < S.cols(); ++j)
+			std::cout << "(" << std::abs(S(i, j)) << "," << std::arg(S(i,j))/Const::fPi << "n)\t";
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+}
+
 
 void InverseMatrix::Set(Block BN, int min, int max)
 {
@@ -165,13 +181,13 @@ std::vector<int> InverseMatrix::Populate(Block BN, bool Fixed)
 				vRet = PopulateAll(Block_Ms, Pow_Ms, Fixed);
 			break;
 		case Block::Ur:
-			vRet = PopulateAll(Block_Ur, Pow_Ur, Fixed);
+			vRet = PopulateSup(Block_Ur, Pow_Ur, Fixed);
 			break;
 		case Block::Us:
 			if (ReduceParameters)
 				vRet = PopulateReduceUs(Pow_Us, Fixed);
 			else
-				vRet = PopulateAll(Block_Us, Pow_Us, Fixed);
+				vRet = PopulateSup(Block_Us, Pow_Us, Fixed);
 			break;
 		default:
 			std::cerr << "Wrong block" << std::endl;
@@ -456,22 +472,54 @@ Eigen::MatrixXcd InverseMatrix::MassMatrixSVD(std::vector<double> &SingularValue
 {
 	SingularValues.clear();
 
+	//Eigen::JacobiSVD<Eigen::MatrixXcd> MassSVD(MassMatrix(), Eigen::ComputeFullV| Eigen::ComputeFullU);
 	Eigen::JacobiSVD<Eigen::MatrixXcd> MassSVD(MassMatrix(), Eigen::ComputeFullV);
 
 	for (unsigned int i = 0; i < MassSVD.singularValues().size(); ++i)
 		SingularValues.push_back(MassSVD.singularValues()[i]);
 	std::reverse(SingularValues.begin(), SingularValues.end());
 
+	//Using SVD unitary matrix the eigenvalue matrix is diagonal but with non zero phases, must redefine
+	//also the eigenvalues are listed in descending order -> reshuffling
+	//Eigen::MatrixXcd VV = MassSVD.matrixV();
+	//Eigen::MatrixXcd UU = MassSVD.matrixU();
+	Eigen::MatrixXcd Singular = Eigen::MatrixXcd::Zero(nM(), nM());
 	Eigen::MatrixXcd Diag = MassSVD.matrixV().transpose() * MassMatrix() * MassSVD.matrixV();
-	Eigen::MatrixXcd Majorana  = Eigen::MatrixXcd::Zero(nM(), nM());
-	Eigen::MatrixXcd Projector = Eigen::MatrixXcd::Zero(nM(), nM());
+	//my homemade version of the phase. just needs V
+	Eigen::MatrixXcd Maj= Eigen::MatrixXcd::Zero(nM(), nM());
+	Eigen::MatrixXcd Perm = Eigen::MatrixXcd::Zero(nM(), nM());
 	for (unsigned int i = 0; i < Diag.rows(); ++i)
 	{
-		Majorana( i, i) = std::exp(- Const::i * std::arg(Diag(i, i)) / 2.0);
-		Projector(i, nM()-1-i) = std::complex<double>(1,0);
+		Singular(i, i) = std::abs(Diag(i,i));
+		Maj( i, i) = std::exp(- Const::i * std::arg(Diag(i, i)) / 2.0);
+		Perm(i, nM()-1-i) = std::complex<double>(1,0);
 	}
+	
+	//this phase should be the correct one, mathematically speaking
+	//Eigen::MatrixXcd Pha1 = (VV.transpose() * UU).cwiseSqrt();
+	//this one is the same thing, but using U
+	//Eigen::MatrixXcd Pha2 = (UU.adjoint() * VV.conjugate()).cwiseSqrt();
+	//corrected unitary matrices
+	//Eigen::MatrixXcd Vz = VV * Pha1.adjoint();
+	//Eigen::MatrixXcd Uz = UU * Pha2.adjoint();
+	//Eigen::MatrixXcd mz = VV * Maj * Projector;
 
-	return MassSVD.matrixV() * Projector * Majorana;
+	//std::cout << "M" << std::endl;		Print(MassMatrix());
+	//std::cout << "V m" << std::endl;	Print(mz);
+
+	//std::cout << "VT M V" << std::endl;	Print(VV.transpose() * MassMatrix() * VV);
+	//these two looks quite similar
+	//std::cout << "1 P VT M V P" << std::endl;	Print(Vz.transpose() * MassMatrix() * Vz);
+	//std::cout << "2 P VT M V P" << std::endl;	Print(Uz.adjoint() * MassMatrix() * Uz.conjugate());
+	//this one looks definitely better, it is more diagonal
+	//std::cout << "m VT M V m" << std::endl;	Print(mz.transpose() * MassMatrix() * mz);
+	//std::cout << "1 V! M! M V" << std::endl;	Print(Vz.adjoint() * MassMatrix().adjoint() * MassMatrix() * Vz);
+	//std::cout << "2 V! M! M V" << std::endl;	Print(Uz.transpose() * MassMatrix().adjoint() * MassMatrix() * Uz.conjugate());
+	//std::cout << "m V! M! M V" << std::endl;	Print(mz.adjoint() * MassMatrix().adjoint() * MassMatrix() * mz);
+	//std::cout << "Singular" << std::endl;	Print(Singular.adjoint()*Singular);
+	//std::cout << std::defaultfloat << MassSVD.singularValues() << std::endl;
+
+	return MassSVD.matrixV() * Maj * Perm;
 }
 
 //number of right-handed neutrinos
@@ -529,10 +577,17 @@ bool InverseMatrix::FindMass(std::vector<double> &vM, double Min, double Max)
 //return true if satisfies GERDA
 bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
+	//std::cout << std::defaultfloat << std::endl;
 	double p2 = -pow(125e6, 2);
 	std::complex<double> BBeff;
-	for (unsigned int i = 0; i < nM(); ++i)
-		BBeff += VA(0, i) * VA(0, i) * p2 * vM.at(i) / (p2 - vM.at(i));
+	for (unsigned int i = 0; i < vM.size(); ++i)
+	{
+		//std::cout << vM.at(i) << "\t(" << std::abs(VA(0,i)) << "," << std::arg(VA(0,i)) << ")\t" << p2/(p2 - vM.at(i)*vM.at(i)) << "\t";
+		//std::cout << (VA(0, i) * VA(0, i) * vM.at(i) * p2 / (p2 - vM.at(i)*vM.at(i))) << std::endl;
+		BBeff += VA(0, i) * VA(0, i) * vM.at(i) * p2 / (p2 - vM.at(i)*vM.at(i));
+	}
+	//std::cout << "Tot " << "\t" << std::abs(BBeff) << std::endl;
+	//std::cout << std::endl;
 
 	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
 	bool BB0 = std::abs(BBeff) < 20e-3;	//future
@@ -544,8 +599,8 @@ bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
 	std::complex<double>  MEGamp;
-	for (unsigned int i = 0; i < nM(); ++i)
-		MEGamp += std::conj(VA(0, i)) * VA(1, i) * Const::LoopG( vM.at(i)*vM.at(i) / pow(Const::fMW, 2) );
+	for (unsigned int i = 0; i < vM.size(); ++i)
+		MEGamp += std::conj(VA(1, i)) * VA(0, i) * Const::LoopG(1e-9 * vM.at(i) / Const::fMW);
 
 	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
 
@@ -559,13 +614,13 @@ bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
 	Eigen::Matrix3d Unit;
-	Eigen::Matrix3cd Kab;
+	Eigen::Matrix3cd Kab = Eigen::Matrix3cd::Zero(3, 3);
 
 	Unit <<	4.0e-3,	1.2e-4,	3.2e-3,
 		1.2e-4,	1.6e-3,	2.1e-3,
 		3.2e-3,	2.1e-3,	5.3e-3;
 
-	for (unsigned int i = 4; i < nM(); ++i)
+	for (unsigned int i = 3; i < vM.size(); ++i)
 		for (unsigned int c = 0; c < Kab.cols(); ++c)
 			for (unsigned int r = 0; r < c+1; ++r)
 				Kab(r, c) += VA(r, i) * std::conj(VA(c, i));
