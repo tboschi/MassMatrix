@@ -90,9 +90,9 @@ int main(int argc, char** argv)
 	tEigen->Branch("VM",  VM,   "fVM[iDim]/D");
 	tEigen->Branch("VT",  VT,   "fVT[iDim]/D");
 
-	std::cout << "Realisation ISS(" << ISS->nR() << "," << ISS->nS() << ")" << std::endl;
-	std::cout << "Saving to file every " << Cap << " entries" << std::endl;
-	std::cout << "Total number of savings expected is " << nMAX/Cap << std::endl;
+	Out << "Realisation ISS(" << ISS->nR() << "," << ISS->nS() << ")" << std::endl;
+	Out << "Saving to file every " << Cap << " entries" << std::endl;
+	Out << "Total number of savings expected is " << nMAX/Cap << std::endl;
 	
 	ISS->Clean(Block::Full);
 
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 				VT[i] = std::abs(VV(2, i));
 			}
 
-			std::cout << "Filling " << i << " at " <<  tEigen->GetEntries() << std::endl;
+			Out << "Filling " << i << " at " <<  tEigen->GetEntries() << std::endl;
 			tEigen->Fill();
 		}
 
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 					FillHistogram(hMatrix, vMag, k, ix, iy, Dim);
 			*/
 
-			std::cout << "Saving " << i/Cap << std::endl;
+			Out << "Saving " << i/Cap << std::endl;
 			tEigen->Write();
 
 			//std::stringstream ssl;
