@@ -610,25 +610,37 @@ bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 	return MEG;
 }
 
-//return true if satisfies unitarity by NSI constraints
+//return true if satisfies unitarity by NSI constraints - 0807.1003
 bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 {
-	Eigen::Matrix3d Unit;
-	Eigen::Matrix3cd Kab = Eigen::Matrix3cd::Zero(3, 3);
+	Eigen::Matrix3d UniOSC, UniEWS;
 
-	Unit <<	4.0e-3,	1.2e-4,	3.2e-3,
-		1.2e-4,	1.6e-3,	2.1e-3,
-		3.2e-3,	2.1e-3,	5.3e-3;
+	UniOSC <<	2.4e-2,	1.3e-2,	3.5e-2,
+			0,	2.2e-2,	6.0e-3,
+			0,	0,	1.0e-1;
 
-	for (unsigned int i = 3; i < vM.size(); ++i)
-		for (unsigned int c = 0; c < Kab.cols(); ++c)
-			for (unsigned int r = 0; r < c+1; ++r)
-				Kab(r, c) += VA(r, i) * std::conj(VA(c, i));
+	UniEWS <<	1.3e-3,	1.2e-5,	1.4e-3,
+			0,	2.2e-4,	6.0e-4,
+			0,	0,	2.8e-3;
 
-	bool NSI = true;
-	for (unsigned int c = 0; c < Kab.cols(); ++c)
+	std::complex<double> KabOSC, KabEWS;
+	bool NSI_OSC = true, NSI_EWS = true;
+	for (unsigned int c = 0; c < 3; ++c)
 		for (unsigned int r = 0; r < c+1; ++r)
-			NSI *= Kab.cwiseAbs()(r, c) < Unit(r, c);
+		{
+			for (unsigned int i = 3; i < vM.size(); ++i)
+			{
+				if (vM.at(i) > 1e1)
+				{
+					KabOSC += VA(r, i) * std::conj(VA(c, i));
+					if (vM.at(i) > 1e9)
+						KabEWS += VA(r, i) * std::conj(VA(c, i));
+				}
+			}
 
-	return NSI;
+			NSI_OSC *= std::abs(KabOSC) < UniOSC(r, c);
+			NSI_EWS *= std::abs(KabEWS) < UniEWS(r, c);
+		}
+
+	return NSI_OSC && NSI_EWS;
 }

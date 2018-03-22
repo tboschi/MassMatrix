@@ -95,10 +95,6 @@ int main(int argc, char** argv)
 	std::cout << "Total number of savings expected is " << nMAX/Cap << std::endl;
 	
 	ISS->Clean(Block::Full);
-	//ISS->Set(Block::Mr,  4,  6);
-	//ISS->Set(Block::Ms,  6, 12);
-	//ISS->Set(Block::Ur, -2,  4);
-	//ISS->Set(Block::Us, -2,  4);
 
 	ISS->Set(Block::Mr, 4, 6);
 	ISS->Set(Block::Ms, 6, 12);
