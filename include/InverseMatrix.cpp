@@ -575,43 +575,33 @@ bool InverseMatrix::FindMass(std::vector<double> &vM, double Min, double Max)
 }
 
 //return true if satisfies GERDA
-bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA)
+bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &Mbb)
 {
-	//std::cout << std::defaultfloat << std::endl;
 	double p2 = -pow(125e6, 2);
 	std::complex<double> BBeff;
 	for (unsigned int i = 0; i < vM.size(); ++i)
-	{
-		//std::cout << vM.at(i) << "\t(" << std::abs(VA(0,i)) << "," << std::arg(VA(0,i)) << ")\t" << p2/(p2 - vM.at(i)*vM.at(i)) << "\t";
-		//std::cout << (VA(0, i) * VA(0, i) * vM.at(i) * p2 / (p2 - vM.at(i)*vM.at(i))) << std::endl;
 		BBeff += VA(0, i) * VA(0, i) * vM.at(i) * p2 / (p2 - vM.at(i)*vM.at(i));
-	}
-	//std::cout << "Tot " << "\t" << std::abs(BBeff) << std::endl;
-	//std::cout << std::endl;
 
-	//bool BB0 = std::abs(BBeff) < 150e-3;	//present
-	bool BB0 = std::abs(BBeff) < 20e-3;	//future
-
-	return BB0;
+	Mbb = std::abs(BBeff);
+	//return Mbb < 150e-3;
+	return Mbb < 20e-3;
 }
 
 //return true if satisfies MEG
-bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA)
+bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &MEGbranch)
 {
 	std::complex<double>  MEGamp;
 	for (unsigned int i = 0; i < vM.size(); ++i)
 		MEGamp += std::conj(VA(1, i)) * VA(0, i) * Const::LoopG(1e-9 * vM.at(i) / Const::fMW);
 
-	double MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
+	MEGbranch = 3 * Const::fAem * std::norm(MEGamp) / (32 * Const::fPi);
 
-	//bool MEG = MEGbranch < 4.2e-13;		//present
-	bool MEG = MEGbranch < 5e-14;		//future
-
-	return MEG;
+	//return MEGbranch < 4.2e-13;		//present
+	return MEGbranch < 5e-14;		//future
 }
 
-//return true if satisfies unitarity by NSI constraints - 0807.1003
-bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA)
+//return true if satisfies unitarity by NSI constraints - 0807.1003 - 1605.08774 - 1609.08637
+bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA, std::vector<double> &vOsc, std::vector<double> &vEws)
 {
 	Eigen::Matrix3d UniOSC, UniEWS;
 
@@ -638,8 +628,10 @@ bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA)
 				}
 			}
 
-			NSI_OSC *= std::abs(KabOSC) < UniOSC(r, c);
-			NSI_EWS *= std::abs(KabEWS) < UniEWS(r, c);
+			vOsc.push_back(std::abs(KabOSC));
+			vEws.push_back(std::abs(KabEWS));
+			NSI_OSC *= vOsc.back() < UniOSC(r, c);
+			NSI_EWS *= vEws.back() < UniEWS(r, c);
 		}
 
 	return NSI_OSC && NSI_EWS;

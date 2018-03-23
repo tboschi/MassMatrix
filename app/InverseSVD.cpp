@@ -68,23 +68,28 @@ int main(int argc, char** argv)
 
 	InverseMatrix *ISS = new InverseMatrix(nR, nS);
 
-	unsigned int Cap = 1000000;
+	unsigned int Cap = 1e7;
 	unsigned int Dim = ISS->nM();
 	unsigned int Var = 3 * nR + (nR + nS) * (nR + nS + 1);
 	int Mag[Var];
-	double MM[Dim], VE[Dim], VM[Dim], VT[Dim];
+	double Mbb, bMG;
+	double OSC[6], EWS[6], MM[Dim], VE[Dim], VM[Dim], VT[Dim];
 	bool NH, EXP, BB0, MEG, NSI;
 
 	TTree *tEigen = new TTree("Eigen", "eigen");
 
 	tEigen->Branch("Dim", &Dim, "iDim/I");
-	tEigen->Branch("Var", &Var, "iVar/I");
+	//tEigen->Branch("Var", &Var, "iVar/I");
 	tEigen->Branch("NH",  &NH,  "bNH/O");
-	tEigen->Branch("EXP", &EXP, "bEXP/O");
-	tEigen->Branch("BB0", &BB0, "bBB0/O");
-	tEigen->Branch("MEG", &MEG, "bMEG/O");
-	tEigen->Branch("NSI", &NSI, "bNSI/O");
-	tEigen->Branch("Mag", Mag,  "fMag[iVar]/I");
+	//tEigen->Branch("EXP", &EXP, "bEXP/O");
+	tEigen->Branch("BB0", &BB0, "bBB0/O");	//bool neutrinoless doublebeta
+	tEigen->Branch("Mbb", &Mbb, "fMbb/D");	//effective doubel beta mass
+	tEigen->Branch("MEG", &MEG, "bMEG/O");	//bool mu to e gamma
+	tEigen->Branch("bMG", &bMG, "fbMG/D");	//mu to e gamma branch
+	tEigen->Branch("NSI", &NSI, "bNSI/O");	//bool if nonunitarity is satisfied
+	tEigen->Branch("OSC", &OSC, "fOSC[6]/D");	//deviation from osc
+	tEigen->Branch("EWS", &EWS, "fEWS[6]/D");	//deviation from EW precision
+	//tEigen->Branch("Mag", Mag,  "fMag[iVar]/I");
 	tEigen->Branch("MM",  MM,   "fMM[iDim]/D");
 	tEigen->Branch("VE",  VE,   "fVE[iDim]/D");
 	tEigen->Branch("VM",  VM,   "fVM[iDim]/D");
@@ -97,7 +102,7 @@ int main(int argc, char** argv)
 	ISS->Clean(Block::Full);
 
 	ISS->Set(Block::Mr, 4, 6);
-	ISS->Set(Block::Ms, 6, 12);
+	ISS->Set(Block::Ms, 6, 10);
 	ISS->Set(Block::Ur, -4, 3);
 	ISS->Set(Block::Us, -4, 3);
 
@@ -106,7 +111,7 @@ int main(int argc, char** argv)
 	ISS->Clean(Block::Ur);
 	ISS->Clean(Block::Us);
 
-	std::vector<double> vVal;
+	std::vector<double> vVal, vOsc, vEws;
 	std::vector<int> vMag;
 
 	for (unsigned int i = 0; i < nMAX; ++i)
@@ -124,12 +129,20 @@ int main(int argc, char** argv)
 		if (ISS->FindDeltaM2(vVal, NH))
 		{
 			EXP = ISS->FindMass(vVal, 1e6, 2e9);
-			BB0 = ISS->BB0(vVal, VV);
-			MEG = ISS->MEG(vVal, VV);
-			NSI = ISS->NSI(vVal, VV);
+			BB0 = ISS->BB0(vVal, VV, Mbb);
+			MEG = ISS->MEG(vVal, VV, bMG);
+			NSI = ISS->NSI(vVal, VV, vOsc, vEws);
 
+			/*
 			for (unsigned int i = 0; i < vMag.size(); ++i)
 				Mag[i] = vMag.at(i);
+			*/
+
+			for (unsigned int i = 0; i < 6; ++i)
+			{
+				OSC[i] = vOsc.at(i);
+				EWS[i] = vEws.at(i);
+			}
 
 			for (unsigned int i = 0; i < Dim; ++i)
 			{
@@ -171,68 +184,6 @@ int main(int argc, char** argv)
 	}
 
 	tEigen->Write();
-
-	/*
-	std::cout <<   "Mr\t";
-	for (unsigned int i = 0; i < ISS->Get(Block::Mr).size(); ++i)
-		std::cout << std::abs(*(ISS->Get(Block::Mr).data() + i)) << "\t";
-	std::cout << "\nlogMr\t";
-	for (auto p : vMr)
-		std::cout << p << "\t";
-	std::cout << std::endl;
-
-	std::cout <<   "Ms\t";
-	for (unsigned int i = 0; i < ISS->Get(Block::Ms).size(); ++i)
-		std::cout << std::abs(*(ISS->Get(Block::Ms).data() + i)) << "\t";
-	std::cout << "\nlogMs\t";
-	for (auto p : vMs)
-		std::cout << p << "\t";
-	std::cout << std::endl << std::endl;
-
-	Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vValues);
-	std::cout << "0th order" << "\t";
-	for (unsigned int i = 0; i < ISS->n0(); ++i)
-		std::cout << vValues.at(2*i) << "\t";
-	std::cout << "and " << 3+ISS->nR()+ISS->nS() - 2*ISS->n0() << " massless";
-	std::cout << std::endl << std::endl << VV.cwiseAbs() << std::endl << std::endl;
-	std::cout << "____________________________________________________________" << std::endl;
-	std::complex<double> dUrij = ISS->RandomAs(Block::Ur);
-	std::complex<double> dUsij = ISS->RandomAs(Block::Us);
-	std::complex<double> dUr00 = dUrij;
-	std::complex<double> dUs00 = dUsij;
-	std::cout << "Perturbation " << std::abs(dUrij) << "\t" << std::abs(dUsij) << std::endl;
-	std::cout << "____________________________________________________________" << std::endl;
-
-	for (unsigned int i = 0; i < nMAX; ++i)
-	{
-		for (unsigned int j = i; j < ISS->nS(); ++j)
-		{
-			ISS->Clean(Block::Ur);
-			ISS->Clean(Block::Us);
-			ISS->Manual(Block::Us, dUsij, i, j);
-			ISS->Manual(Block::Us, dUsij, j, i);
-			if (TwoPerturbations)
-			{
-				ISS->Manual(Block::Us, dUs00, 0, 1);
-				ISS->Manual(Block::Us, dUs00, 1, 0);
-			}
-			std::cout << "Perturbed at (" << i << "," << j << ")" << std::endl;
-			std::cout << ISS->Get(Block::Us).cwiseAbs() << std::endl << std::endl;
-
-			VV = ISS->MassMatrixSVD(vValues);
-			for (auto p : vValues)
-				std::cout << p << "\t";
-			std::cout << std::endl;
-			std::cout << std::endl << std::endl << VV.cwiseAbs() << std::endl << std::endl;
-			//for (unsigned int i = 0; i < ISS->n0(); ++i)
-			//	std::cout << (vValues.at(2*i)+vValues.at(2*i+1))*0.5 << "+/-" << vValues.at(2*i)-vValues.at(2*i+1) << "\t";
-			//for (unsigned int i = 2*ISS->n0(); i < vValues.size(); ++i)
-			//	std::cout << vValues.at(i) << "\t";
-			//std::cout << std::endl << std::endl << VV.cwiseAbs() << std::endl << std::endl;
-			//std::cout << "____________________________________________________________" << std::endl;
-		}
-	}
-	*/
 
 	return 0;
 }

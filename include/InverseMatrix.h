@@ -69,9 +69,9 @@ class InverseMatrix
 
 		bool FindDeltaM2(std::vector<double> &vM, bool &Hierarchy);
 		bool FindMass(std::vector<double> &vM, double Min, double Max);
-		bool BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA);
-		bool MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA);
-		bool NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA);
+		bool BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &Mbb);
+		bool MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &MEGbranch);
+		bool NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA, std::vector<double> &vOsc, std::vector<double> &vEws);
 
 	private:
 		unsigned int inR, inS;
