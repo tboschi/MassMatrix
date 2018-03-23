@@ -470,8 +470,6 @@ Eigen::MatrixXcd InverseMatrix::ColumnBlockSVD(std::vector<double> &SingularValu
 //SVD decomposition of the full mass matrix
 Eigen::MatrixXcd InverseMatrix::MassMatrixSVD(std::vector<double> &SingularValues)
 {
-	SingularValues.clear();
-
 	//Eigen::JacobiSVD<Eigen::MatrixXcd> MassSVD(MassMatrix(), Eigen::ComputeFullV| Eigen::ComputeFullU);
 	Eigen::JacobiSVD<Eigen::MatrixXcd> MassSVD(MassMatrix(), Eigen::ComputeFullV);
 
@@ -547,7 +545,7 @@ unsigned int InverseMatrix::n0()
 
 //return true if the Dm2 from nufit oscillation data is found
 //Hierarchy is true if is normal ordering, false if inverted
-bool InverseMatrix::FindDeltaM2(std::vector<double> &vM, bool &Hierarchy)
+bool InverseMatrix::FindDeltaM2(const std::vector<double> &vM, bool &Hierarchy)
 {
 	bool N21 = (vM.at(1)*vM.at(1)-vM.at(0)*vM.at(0) > 6.8e-5	&& vM.at(1)*vM.at(1)-vM.at(0)*vM.at(0) < 8.02e-5);
 	bool N31 = (vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) > 2.399e-3	&& vM.at(2)*vM.at(2)-vM.at(0)*vM.at(0) < 2.593e-3);
@@ -564,7 +562,7 @@ bool InverseMatrix::FindDeltaM2(std::vector<double> &vM, bool &Hierarchy)
 }
 
 //returns true if there is a mass state in the range Min-Max
-bool InverseMatrix::FindMass(std::vector<double> &vM, double Min, double Max)
+bool InverseMatrix::FindMass(const std::vector<double> &vM, double Min, double Max)
 {
 	bool M4 = false; 
 	for (auto p : vM)
@@ -575,7 +573,7 @@ bool InverseMatrix::FindMass(std::vector<double> &vM, double Min, double Max)
 }
 
 //return true if satisfies GERDA
-bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &Mbb)
+bool InverseMatrix::BB0(const std::vector<double> &vM, const Eigen::MatrixXcd &VA, double &Mbb)
 {
 	double p2 = -pow(125e6, 2);
 	std::complex<double> BBeff;
@@ -588,7 +586,7 @@ bool InverseMatrix::BB0(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &M
 }
 
 //return true if satisfies MEG
-bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &MEGbranch)
+bool InverseMatrix::MEG(const std::vector<double> &vM, const Eigen::MatrixXcd &VA, double &MEGbranch)
 {
 	std::complex<double>  MEGamp;
 	for (unsigned int i = 0; i < vM.size(); ++i)
@@ -601,7 +599,7 @@ bool InverseMatrix::MEG(std::vector<double> &vM, Eigen::MatrixXcd &VA, double &M
 }
 
 //return true if satisfies unitarity by NSI constraints - 0807.1003 - 1605.08774 - 1609.08637
-bool InverseMatrix::NSI(std::vector<double> &vM, Eigen::MatrixXcd &VA, std::vector<double> &vOsc, std::vector<double> &vEws)
+bool InverseMatrix::NSI(const std::vector<double> &vM, const Eigen::MatrixXcd &VA, std::vector<double> &vOsc, std::vector<double> &vEws)
 {
 	Eigen::Matrix3d UniOSC, UniEWS;
 

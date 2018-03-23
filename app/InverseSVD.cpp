@@ -112,22 +112,25 @@ int main(int argc, char** argv)
 	ISS->Clean(Block::Us);
 
 	std::vector<double> vVal, vOsc, vEws;
-	std::vector<int> vMag;
+	//std::vector<int> vMag;
 
 	for (unsigned int i = 0; i < nMAX; ++i)
 	{
 		ISS->Clean(Block::Full);
-		vMag = ISS->Populate(Block::Full);
+		//vMag = ISS->Populate(Block::Full);
+		ISS->Populate(Block::Full);
 
 		//ISS->Clean(Block::Ur);
 		//ISS->Clean(Block::Us);
 		//ISS->Show(Block::Full, 0);
 
+		vVal.clear();
 		Eigen::MatrixXcd VV = ISS->MassMatrixSVD(vVal);
-
 
 		if (ISS->FindDeltaM2(vVal, NH))
 		{
+			vOsc.clear();
+			vEws.clear();
 			EXP = ISS->FindMass(vVal, 1e6, 2e9);
 			BB0 = ISS->BB0(vVal, VV, Mbb);
 			MEG = ISS->MEG(vVal, VV, bMG);
