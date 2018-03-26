@@ -68,7 +68,6 @@ int main(int argc, char** argv)
 
 	InverseMatrix *ISS = new InverseMatrix(nR, nS);
 
-	unsigned int Cap = 1e7;
 	unsigned int Dim = ISS->nM();
 	unsigned int Var = 3 * nR + (nR + nS) * (nR + nS + 1);
 	int Mag[Var];
@@ -96,8 +95,7 @@ int main(int argc, char** argv)
 	tEigen->Branch("VT",  VT,   "fVT[iDim]/D");
 
 	Out << "Realisation ISS(" << ISS->nR() << "," << ISS->nS() << ")" << std::endl;
-	Out << "Saving to file every " << Cap << " entries" << std::endl;
-	Out << "Total number of savings expected is " << nMAX/Cap << std::endl;
+	Out << "Saving to file every " << nMAX/10 << " entries" << std::endl;
 	
 	ISS->Clean(Block::Full);
 
@@ -114,7 +112,9 @@ int main(int argc, char** argv)
 	std::vector<double> vVal, vOsc, vEws;
 	//std::vector<int> vMag;
 
-	for (unsigned int i = 0; i < nMAX; ++i)
+	unsigned int iter = 0;
+	//for (unsigned int i = 0; i < nMAX; ++i)
+	while (iter < nMAX)
 	{
 		ISS->Clean(Block::Full);
 		//vMag = ISS->Populate(Block::Full);
@@ -155,11 +155,11 @@ int main(int argc, char** argv)
 				VT[i] = std::abs(VV(2, i));
 			}
 
-			Out << "Filling " << i << " at " <<  tEigen->GetEntries() << std::endl;
+			Out << "Filling " << iter++ << std::endl;
 			tEigen->Fill();
 		}
 
-		if (i % Cap == Cap-1)
+		if (iter % (nMAX/10) == (nMAX/10)-1)
 		{
 			/*
 			unsigned int k = 0;
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
 					FillHistogram(hMatrix, vMag, k, ix, iy, Dim);
 			*/
 
-			Out << "Saving " << i/Cap << std::endl;
+			Out << "Saving to file" << std::endl;
 			tEigen->Write();
 
 			//std::stringstream ssl;
