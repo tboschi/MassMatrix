@@ -9,7 +9,8 @@ ROOTCXXF = $(shell root-config --cflags)
 LDFLAGS  := -Wl,--no-as-needed $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -I$(INCDIR)
 
-CPP =	InverseSVD	\
+CPP =	SaveTree	\
+	InverseSVD	\
 	#InverseSVD_noROOT	\
 	#Decomposition	\
 	#Delineate	\

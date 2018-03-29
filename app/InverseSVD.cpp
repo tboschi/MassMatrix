@@ -112,6 +112,7 @@ int main(int argc, char** argv)
 	std::vector<double> vVal, vOsc, vEws;
 	//std::vector<int> vMag;
 
+	bool Save = false;
 	unsigned int iter = 0;
 	//for (unsigned int i = 0; i < nMAX; ++i)
 	while (iter < nMAX)
@@ -157,10 +158,14 @@ int main(int argc, char** argv)
 
 			Out << "Filling " << iter++ << std::endl;
 			tEigen->Fill();
+
+			if (Save)
+				Save = false;
 		}
 
-		if (iter % (nMAX/10) == (nMAX/10)-1)
+		if (!Save && iter % (nMAX/10) == (nMAX/10)-1)
 		{
+			Save = true;
 			/*
 			unsigned int k = 0;
 			for (unsigned int ix = 4; ix < 4+nR; ++ix)
