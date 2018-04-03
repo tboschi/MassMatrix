@@ -383,7 +383,7 @@ std::vector<int> InverseMatrix::PopulateReduceMs(std::uniform_int_distribution<i
 	if (Fixed)
 		GlobMod = Pow(MT);
 
-	for (unsigned int i = 0; i < Block_Ms.rows(); ++i)
+	for (unsigned int i = 0; i < std::min(Block_Ms.rows(), Block_Ms.cols()); ++i)
 	{
 		if (!Fixed)
 			GlobMod = Pow(MT);
@@ -543,6 +543,21 @@ unsigned int InverseMatrix::n0()
 	return nR() < 3 ? nR() : std::min(nR(), nS());
 }
 
+//return true if naturalness in t'Hooft sense is respected
+bool InverseMatrix::IsNatural()
+{
+	double MsMin;
+	if (ReduceParameters)
+		MsMin = Block_Ms.cwiseAbs().diagonal().minCoeff();
+	else
+		Block_Ms.cwiseAbs().minCoeff();
+	bool bUr = (Block_Ur.cwiseAbs().maxCoeff() < Block_Mr.cwiseAbs().minCoeff());
+	bool bUs = (Block_Us.cwiseAbs().maxCoeff() < Block_Mr.cwiseAbs().minCoeff());
+	bool bMr = (Block_Mr.cwiseAbs().maxCoeff() < MsMin);
+
+	return bUr && bUs && bMr;
+}
+
 //return true if the Dm2 from nufit oscillation data is found
 //Hierarchy is true if is normal ordering, false if inverted
 bool InverseMatrix::FindDeltaM2(const std::vector<double> &vM, bool &Hierarchy)
@@ -561,15 +576,31 @@ bool InverseMatrix::FindDeltaM2(const std::vector<double> &vM, bool &Hierarchy)
 	return (N21 && N31) || (I21 && I32);
 }
 
+//returns true if there is a mass state in the LNC limit in the range Min-Max
+bool InverseMatrix::FindLNCMass(double Min, double Max)
+{
+	std::vector<double> vM;
+	if (ReduceParameters)
+		for (unsigned int i = 0; i < Block_Ms.diagonal().cols(); ++i)
+			vM.push_back(Block_Ms.cwiseAbs()(i, i));
+	else
+		for (unsigned int i = 0; i < Block_Ms.diagonal().cols(); ++i)
+			for (unsigned int j = 0; j < Block_Ms.diagonal().rows(); ++j)
+			vM.push_back(Block_Ms.cwiseAbs()(j, i));
+
+	for (auto p : vM)
+		if (p > Min && p < Max)
+			return true;
+	return false;
+}
+
 //returns true if there is a mass state in the range Min-Max
 bool InverseMatrix::FindMass(const std::vector<double> &vM, double Min, double Max)
 {
-	bool M4 = false; 
 	for (auto p : vM)
-		if (!M4 && p > Min && p < Max)
-			M4 = true;
-
-	return M4;
+		if (p > Min && p < Max)
+			return true;
+	return false;
 }
 
 //return true if satisfies GERDA

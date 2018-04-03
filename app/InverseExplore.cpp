@@ -78,9 +78,9 @@ int main(int argc, char** argv)
 	TTree *tEigen = new TTree("Eigen", "eigen");
 
 	tEigen->Branch("Dim", &Dim, "iDim/I");
-	//tEigen->Branch("Var", &Var, "iVar/I");
+	tEigen->Branch("Var", &Var, "iVar/I");
 	tEigen->Branch("NH",  &NH,  "bNH/O");
-	//tEigen->Branch("EXP", &EXP, "bEXP/O");
+	tEigen->Branch("EXP", &EXP, "bEXP/O");
 	tEigen->Branch("BB0", &BB0, "bBB0/O");	//bool neutrinoless doublebeta
 	tEigen->Branch("Mbb", &Mbb, "fMbb/D");	//effective doubel beta mass
 	tEigen->Branch("MEG", &MEG, "bMEG/O");	//bool mu to e gamma
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 	tEigen->Branch("NSI", &NSI, "bNSI/O");	//bool if nonunitarity is satisfied
 	tEigen->Branch("OSC", &OSC, "fOSC[6]/D");	//deviation from osc
 	tEigen->Branch("EWS", &EWS, "fEWS[6]/D");	//deviation from EW precision
-	//tEigen->Branch("Mag", Mag,  "fMag[iVar]/I");
+	tEigen->Branch("Mag", Mag,  "fMag[iVar]/I");
 	tEigen->Branch("MM",  MM,   "fMM[iDim]/D");
 	tEigen->Branch("VE",  VE,   "fVE[iDim]/D");
 	tEigen->Branch("VM",  VM,   "fVM[iDim]/D");
@@ -99,6 +99,13 @@ int main(int argc, char** argv)
 	
 	ISS->Clean(Block::Full);
 
+	//original
+	//ISS->Set(Block::Mr, 4, 7);
+	//ISS->Set(Block::Ms, 6, 12);
+	//ISS->Set(Block::Ur, -4, 4);
+	//ISS->Set(Block::Us, -4, 4);
+
+	//low coupling
 	ISS->Set(Block::Mr, 3,  6);
 	ISS->Set(Block::Ms, 6, 15);
 	ISS->Set(Block::Ur, -4, 1);
@@ -110,7 +117,7 @@ int main(int argc, char** argv)
 	ISS->Clean(Block::Us);
 
 	std::vector<double> vVal, vOsc, vEws;
-	//std::vector<int> vMag;
+	std::vector<int> vMag;
 
 	bool Save = false;
 	unsigned int iter = 0;
@@ -118,8 +125,8 @@ int main(int argc, char** argv)
 	while (iter < nMAX)
 	{
 		ISS->Clean(Block::Full);
-		//vMag = ISS->Populate(Block::Full);
-		ISS->Populate(Block::Full);
+		vMag = ISS->Populate(Block::Full);
+		//ISS->Populate(Block::Full);
 
 		if (!ISS->IsNatural() || !ISS->FindLNCMass(5e6, 5e9))
 			continue;
@@ -133,18 +140,15 @@ int main(int argc, char** argv)
 
 		if (ISS->FindDeltaM2(vVal, NH))
 		{
-			++iter;
 			vOsc.clear();
 			vEws.clear();
-			//EXP = ISS->FindMass(vVal, 1e6, 2e9);
+			EXP = ISS->FindMass(vVal, 5e6, 5e9);
 			BB0 = ISS->BB0(vVal, VV, Mbb);
 			MEG = ISS->MEG(vVal, VV, bMG);
 			NSI = ISS->NSI(vVal, VV, vOsc, vEws);
 
-			/*
 			for (unsigned int i = 0; i < vMag.size(); ++i)
 				Mag[i] = vMag.at(i);
-			*/
 
 			for (unsigned int i = 0; i < 6; ++i)
 			{
@@ -160,7 +164,7 @@ int main(int argc, char** argv)
 				VT[i] = std::abs(VV(2, i));
 			}
 
-			Out << "Filling " << iter << std::endl;
+			Out << "Filling " << iter++ << std::endl;
 			tEigen->Fill();
 
 			if (Save)
@@ -187,7 +191,7 @@ int main(int argc, char** argv)
 			*/
 
 			Out << "Saving to file" << std::endl;
-			tEigen->Write(0, TObject::kWriteDelete);
+			tEigen->Write();
 
 			//std::stringstream ssl;
 			//ssl << "matrix" << int((i+1)/Cap); 

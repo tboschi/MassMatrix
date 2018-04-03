@@ -10,6 +10,7 @@ LDFLAGS  := -Wl,--no-as-needed $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -I$(INCDIR)
 
 CPP =	SaveTree	\
+	InverseExplore	\
 	InverseSVD	\
 	#InverseSVD_noROOT	\
 	#Decomposition	\

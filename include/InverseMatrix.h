@@ -67,7 +67,9 @@ class InverseMatrix
 		unsigned int nM();
 		unsigned int n0();
 
+		bool IsNatural();
 		bool FindDeltaM2(const std::vector<double> &vM, bool &Hierarchy);
+		bool FindLNCMass(double Min, double Max);
 		bool FindMass(const std::vector<double> &vM, double Min, double Max);
 		bool BB0(const std::vector<double> &vM, const Eigen::MatrixXcd &VA, double &Mbb);
 		bool MEG(const std::vector<double> &vM, const Eigen::MatrixXcd &VA, double &MEGbranch);
