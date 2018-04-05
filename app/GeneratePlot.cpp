@@ -31,12 +31,9 @@ int main(int argc, char** argv)
 	
 	for (unsigned int i = 2; i < argc; ++i)
 	{
-		std::cout << "H0" << std::endl;
 		FileTree = new TFile(argv[i], "OPEN");
-		std::cout << "H1" << std::endl;
 		FileTree->GetObject("Eigen", Scan);
 
-		std::cout << "H2" << std::endl;
 		Scan->SetBranchAddress("Dim", &Dim, &b_Dim);
 		Scan->SetBranchAddress("MM", MM, &b_MM);
 		Scan->SetBranchAddress("VE", VE, &b_VE);
@@ -46,20 +43,11 @@ int main(int argc, char** argv)
 		Scan->SetBranchAddress("NSI", &NSI, &b_NSI);
 		Scan->SetBranchAddress("MEG", &MEG, &b_MEG);
 
-		std::cout << "H3 " << Scan->GetEntriesFast() << std::endl;
 		for (unsigned int j = 480; j < Scan->GetEntriesFast(); ++j)
 		{
-			std::cout << "H3 " << Scan->GetEntriesFast() << std::endl;
-			std::cout << "F0 " << j << std::endl;
-			std::cout << Scan->GetEntry(j) << std::endl;
-			std::cout << "F1" << std::endl;
-			std::cout << "BB0 " << BB0 << "\tNSI " << NSI << "\tMEG " << MEG << std::endl;
-			std::cout << "MM " << MM << "\tMM[0] " << MM[0] << std::endl;
 			if (BB0 && NSI && MEG)
 				Out << MM[3] << "\t" << VE[3] << "\t" << VM[3] << "\t" << VT[3] << std::endl;
-			std::cout << "F2" << std::endl;
 		}
-		std::cout << "H4" << std::endl;
 		FileTree->Close();
 	}
 
