@@ -10,15 +10,15 @@ LDFLAGS  := -Wl,--no-as-needed $(LDFLAGS) $(ROOTLIBS)
 CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -I$(INCDIR)
 
 CPP =	SaveTree	\
-	InverseExplore	\
-	InverseSVD	\
+	GeneratePlot	\
+	#InverseExplore	\
+	#InverseSVD	\
 	#InverseSVD_noROOT	\
 	#Decomposition	\
 	#Delineate	\
 	SVD		\
 	Plotter
-	#GeneratePlot	\
-	RandomScan	\
+	#RandomScan	\
 	Test		\
 	OneGeneration
 
