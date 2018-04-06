@@ -106,10 +106,10 @@ int main(int argc, char** argv)
 	//ISS->Set(Block::Us, -4, 4);
 
 	//low coupling
-	ISS->Set(Block::Mr, 3,  6);
-	ISS->Set(Block::Ms, 6, 15);
-	ISS->Set(Block::Ur, -4, 1);
-	ISS->Set(Block::Us, -4, 1);
+	ISS->Set(Block::Mr,  3,  9);
+	ISS->Set(Block::Ms,  8, 15);
+	ISS->Set(Block::Ur, -4,  4);
+	ISS->Set(Block::Us,  5,  9);
 
 	ISS->Clean(Block::Mr);
 	ISS->Clean(Block::Ms);
@@ -128,8 +128,8 @@ int main(int argc, char** argv)
 		vMag = ISS->Populate(Block::Full);
 		//ISS->Populate(Block::Full);
 
-		if (!ISS->IsNatural() || !ISS->FindLNCMass(5e6, 5e9))
-			continue;
+		//if (!ISS->IsNatural() || !ISS->FindLNCMass(5e6, 5e9))
+		//	continue;
 
 		//ISS->Clean(Block::Ur);
 		//ISS->Clean(Block::Us);

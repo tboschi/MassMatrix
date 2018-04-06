@@ -15,6 +15,50 @@
 
 int main(int argc, char** argv)
 {
+	const struct option longopts[] = 
+	{
+		{"help", 	no_argument,	 	0, 'h'},
+		{0,	0, 	0,	0},
+	};
+
+	int index; 
+	int iarg = 0;
+	opterr = 1;
+
+	std::ofstream OutFile;
+	unsigned int nMAX = 10000, nS = 3, nR = 3;
+	TFile *RootFile;
+	bool TwoPerturbations = false;
+
+	while((iarg = getopt_long(argc,argv, "I:R:S:yo:r:h", longopts, &index)) != -1)
+	{
+		switch(iarg)
+		{
+			case 'I':
+				nMAX = strtol(optarg, NULL, 10);
+				break;
+			case 'y':
+				TwoPerturbations = true;
+				break;
+			case 'R':
+				nR = strtol(optarg, NULL, 10);
+				break;
+			case 'S':
+				nS = strtol(optarg, NULL, 10);
+				break;
+			case 'r':
+				RootFile = new TFile(optarg, "RECREATE");
+				break;
+			case 'o':
+				OutFile.open(optarg);
+				break;
+			case 'h':
+				return 1;
+			default:
+				break;
+		}
+	}
+	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 	std::ofstream OutFile(argv[1]);
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
@@ -43,10 +87,14 @@ int main(int argc, char** argv)
 		Scan->SetBranchAddress("NSI", &NSI, &b_NSI);
 		Scan->SetBranchAddress("MEG", &MEG, &b_MEG);
 
-		for (unsigned int j = 480; j < Scan->GetEntriesFast(); ++j)
+		for (unsigned int j = 0; j < Scan->GetEntriesFast(); ++j)
 		{
-			if (BB0 && NSI && MEG)
-				Out << MM[3] << "\t" << VE[3] << "\t" << VM[3] << "\t" << VT[3] << std::endl;
+			Scan->GetEntry(j);
+			if (MM[4])
+			bool Pass = BB0 && NSI && MEG;
+			if (Pass)
+				Out << MM[4]*1e-9 << "\t" << pow(VE[4], 2) << "\t" << pow(VM[4], 2) << "\t" << pow(VT[4], 2) << std::endl;
+				//Out << MM[3]*1e-9 << "\t" << pow(VE[3], 2) << "\t" << pow(VM[3], 2) << "\t" << pow(VT[3], 2) << std::endl;
 		}
 		FileTree->Close();
 	}

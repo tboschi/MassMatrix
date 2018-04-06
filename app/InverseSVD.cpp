@@ -99,10 +99,17 @@ int main(int argc, char** argv)
 	
 	ISS->Clean(Block::Full);
 
-	ISS->Set(Block::Mr, 3,  6);
-	ISS->Set(Block::Ms, 6, 15);
-	ISS->Set(Block::Ur, -4, 1);
-	ISS->Set(Block::Us, -4, 1);
+	//(2,2) and (2,3) with pseud-dirac pair
+	//ISS->Set(Block::Mr, 3,  6);
+	//ISS->Set(Block::Ms, 6, 15);
+	//ISS->Set(Block::Ur, -4, 1);
+	//ISS->Set(Block::Us, -4, 1);
+
+	//(2,3) with weyl state
+	ISS->Set(Block::Mr,  3,  9);
+	ISS->Set(Block::Ms,  8, 15);
+	ISS->Set(Block::Ur, -4,  4);
+	ISS->Set(Block::Us,  5,  9);
 
 	ISS->Clean(Block::Mr);
 	ISS->Clean(Block::Ms);
