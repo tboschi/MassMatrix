@@ -128,8 +128,8 @@ int main(int argc, char** argv)
 		//vMag = ISS->Populate(Block::Full);
 		ISS->Populate(Block::Full);
 
-		if (!ISS->IsNatural() || !ISS->FindLNCMass(5e6, 5e9))
-			continue;
+		//if (!ISS->IsNatural() || !ISS->FindLNCMass(5e6, 5e9))
+		//	continue;
 
 		//ISS->Clean(Block::Ur);
 		//ISS->Clean(Block::Us);
