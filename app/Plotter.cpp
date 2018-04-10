@@ -88,9 +88,9 @@ int main(int argc, char** argv)
 		vUu2.push_back(rUu2);
 		if (UeFlag)
 			vEvt.push_back(rE);
-		if (UmFlag)
+		else if (UmFlag)
 			vEvt.push_back(rM);
-		if (UtFlag)
+		else if (UtFlag)
 			vEvt.push_back(rT);
 	}
 
@@ -104,7 +104,8 @@ int main(int argc, char** argv)
 		else
 			i = 2*vMass.size() - 1 - j;
 
-		if (vMass.at(i) != Mass_)
+		if (vMass.at(i) != Mass_ || j == vMass.size())
+		//if (vMass.at(i) != Mass_)
 		{
 			Reached = false;
 			Mass_ = vMass.at(i);
@@ -112,7 +113,8 @@ int main(int argc, char** argv)
 
 		Thr = Threshold;
 
-		if (!Reached && vEvt.at(i) > Thr && vEvt.at(i+1) > Thr)
+		//if (!Reached && vEvt.at(i) > Thr && (i < vEvt.size() ? vEvt.at(i+1) > Thr : true))
+		if (!Reached && vEvt.at(i) > Thr)
 		{
 			if (First)
 			{

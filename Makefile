@@ -11,13 +11,13 @@ CXXFLAGS := $(CXXFLAGS) -std=c++11 -O3 -mavx $(ROOTCXXF) -I$(INCDIR)
 
 CPP =	GeneratePlot	\
 	SaveTree	\
-	InverseExplore	\
+	Delineate	\
+	Plotter
+	#InverseExplore	\
 	InverseSVD	\
 	#InverseSVD_noROOT	\
 	#Decomposition	\
-	#Delineate	\
 	SVD		\
-	Plotter
 	#RandomScan	\
 	Test		\
 	OneGeneration

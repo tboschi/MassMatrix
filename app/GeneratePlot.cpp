@@ -84,6 +84,8 @@ int main(int argc, char** argv)
 	if (FileE.is_open())
 		while (getline(FileE, Line))
 		{
+			if (Line[0] == '#')
+				continue;
 			ssL.str("");
 			ssL.clear();
 
@@ -96,6 +98,8 @@ int main(int argc, char** argv)
 	if (FileM.is_open())
 		while (getline(FileM, Line))
 		{
+			if (Line[0] == '#')
+				continue;
 			ssL.str("");
 			ssL.clear();
 
@@ -108,6 +112,8 @@ int main(int argc, char** argv)
 	if (FileT.is_open())
 		while (getline(FileT, Line))
 		{
+			if (Line[0] == '#')
+				continue;
 			ssL.str("");
 			ssL.clear();
 
@@ -147,7 +153,7 @@ int main(int argc, char** argv)
 			bool MLimit = TestLimit(m0, vm, vMM, vVM, mc); 
 			bool TLimit = TestLimit(m0, vt, vMT, vVT, tc); 
 
-			Out << m0 << "\t" << (ELimit ? ve : 1/0) << "\t" << (MLimit ? vm : 1/0) << "\t" << (TLimit ? vt : 1/0) << std::endl;
+			Out << m0 << "\t" << (ELimit ? ve : sqrt(-1)) << "\t" << (MLimit ? vm : sqrt(-1)) << "\t" << (TLimit ? vt : sqrt(-1)) << std::endl;
 		}
 	}
 
@@ -181,8 +187,9 @@ bool TestLimit(const double M0, const double V0, std::vector<double> &vM, std::v
 		v2 = vU.at(cc+1);
 	}
 
-	double VL = (v2-v1)/(m2-m1) * (M0 - m1) + v1;
-	if (V0 < VL)
+	//double Vx = (v2-v1)/(m2-m1) * (M0 - m1) + v1;
+	double lVx = log10(v2/v1)/(m2-m1) * (M0 - m1) + log10(v1);
+	if (log10(V0) < lVx)
 		return true;
 	else
 		return false;
