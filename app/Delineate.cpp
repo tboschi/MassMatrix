@@ -31,7 +31,6 @@ int main(int argc, char** argv)
 	std::ostream &Out = (OutFile.is_open()) ? OutFile : std::cout;
 
 	std::string Line;
-	std::stringstream ssL;
 
 	unsigned int Grid = 500;
 	unsigned int Hist_e[Grid][Grid] = {}, Hist_m[Grid][Grid] = {}, Hist_t[Grid][Grid] = {};
@@ -43,12 +42,58 @@ int main(int argc, char** argv)
 	double M_d = (lMmax - lMmin)/Grid, U_d = (lUmax - lUmin)/Grid;
 	while (std::getline(InFile, Line))
 	{
-		ssL.str("");
-		ssL.clear();
+		std::stringstream ssL(Line);
 
-		ssL << Line;
+		double tmp;
+		Mm = 0;
+		Ue = 0;
+		Um = 0;
+		Ut = 0;
+
+		bool Err = false;
 		ssL >> Mm >> Ue >> Um >> Ut;
+		/*
+		std::cout << "In " << Line << std::endl;
+		//dump all ssL
+		for (unsigned int i = 0; !ssL.eof(); ++i)
+		{
+			double *pp;
+			switch(i)
+			{
+				case 0:
+					pp = &Mm;
+					break;
+				case 1:
+					pp = &Ue;
+					break;
+				case 2:
+					pp = &Um;
+					break;
+				case 3:
+					pp = &Ut;
+					break;
+			}
+			if (ssL >> tmp)
+			{
+				Err = false;
+				*pp = tmp;
+			}
+			else if (!ssL.eof())
+			{
+				if (!Err)
+					Err = true;
+				else
+					--i;
+
+				*pp = sqrt(-1);
+				ssL.clear();
+				ssL.ignore(1);
+			}
+		}
+		std::cout << "Out " << Mm << "\t" << Ue << "\t" << Um << "\t" << Ut << std::endl;
 		//Mm *= 1e-9;
+		//
+		*/
 
 		if (log10(Mm) < lMmin || log10(Mm) > lMmax)
 			continue;
