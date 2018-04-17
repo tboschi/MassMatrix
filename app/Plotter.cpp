@@ -113,8 +113,8 @@ int main(int argc, char** argv)
 
 		Thr = Threshold;
 
-		//if (!Reached && vEvt.at(i) > Thr && (i < vEvt.size() ? vEvt.at(i+1) > Thr : true))
-		if (!Reached && vEvt.at(i) > Thr)
+		if (!Reached && vEvt.at(i) > Thr && (i < vEvt.size() ? vEvt.at(i+1) > Thr : true))
+		//if (!Reached && vEvt.at(i) > Thr)
 		{
 			if (First)
 			{

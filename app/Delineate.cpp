@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 	double Mm, Ue, Um, Ut;
 	double RM, Re, Rm, Rt;
 	unsigned int Mm_i, Ue_i, Um_i, Ut_i;
-	double lMmin = -2, lMmax = 0.3, lUmin = -16, lUmax = 0;
+	double lMmin = -3, lMmax = 1, lUmin = -30, lUmax = 0;
 	double M_d = (lMmax - lMmin)/Grid, U_d = (lUmax - lUmin)/Grid;
 	while (std::getline(InFile, Line))
 	{

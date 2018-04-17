@@ -153,7 +153,8 @@ int main(int argc, char** argv)
 			bool MLimit = TestLimit(m0, vm, vMM, vVM, mc); 
 			bool TLimit = TestLimit(m0, vt, vMT, vVT, tc); 
 
-			Out << m0 << "\t" << (ELimit ? ve : -1) << "\t" << (MLimit ? vm : -1) << "\t" << (TLimit ? vt : -1) << std::endl;
+			//Out << m0 << "\t" << (ELimit ? ve : -1) << "\t" << (MLimit ? vm : -1) << "\t" << (TLimit ? vt : -1) << std::endl;
+			Out << m0 << "\t" << ve << "\t" << vm << "\t" << vt << std::endl;
 		}
 	}
 
